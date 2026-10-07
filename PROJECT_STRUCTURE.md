@@ -239,7 +239,7 @@ food-rescue-ai/
 │   └── config.toml               # Supabase CLI local configuration
 ├── docs/
 │   └── SUPABASE_SETUP.md         # Database & cloud storage setup guide
-├── middleware.ts                 # Next.js Edge middleware for session & RBAC routing
+├── proxy.ts                      # Next.js Edge proxy for session & RBAC routing
 ├── ARCHITECTURE.md               # Master system architecture & specification
 ├── DATABASE_RULES.md             # Database schema, RLS, and security contract
 ├── API_SPEC.md                   # Complete REST API specification
