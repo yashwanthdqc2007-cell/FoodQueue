@@ -71,12 +71,11 @@ During application signup, pass:
 
 ```json
 {
-  "full_name": "User name",
-  "role": "kitchen"
+  "full_name": "User name"
 }
 ```
 
-The database trigger creates the initial profile. The application should then complete organization onboarding.
+The database trigger automatically creates the initial profile with `role = 'kitchen'` and `organization_id = NULL`. Newly registered users cannot assign themselves an organization or role. An administrator must provision and link the user via the admin user management interface.
 
 ## 6. Environment variables
 
@@ -84,13 +83,14 @@ Create `.env.local` in the Next.js app:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=
 GEMINI_API_KEY=
 NEXT_PUBLIC_MAP_STYLE_URL=
 ```
 
-Only `NEXT_PUBLIC_*` values may be exposed to browser code. Never expose `SUPABASE_SERVICE_ROLE_KEY` or `GEMINI_API_KEY` to the client.
+- **Client / Browser:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_MAP_STYLE_URL` are accessible in browser client code. Database interactions via the publishable key are strictly governed by Postgres Row Level Security (RLS) and the user's authenticated session.
+- **Trusted Server Only:** `SUPABASE_SECRET_KEY` (used for privileged administrative actions) and `GEMINI_API_KEY` (used for AI classification) reside strictly on the server runtime. **Never** expose `SUPABASE_SECRET_KEY` or `GEMINI_API_KEY` to browser or client-side code.
 
 ## 7. Important implementation rule
 

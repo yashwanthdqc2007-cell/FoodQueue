@@ -562,7 +562,7 @@ Every endpoint must validate authentication, authorization, and request data.
 - Enforce Row Level Security (RLS) in Supabase.
 - Users can only access records belonging to their organization/role.
 - User self-service profile updates must not be allowed to change role or organization; these are controlled fields.
-- Never expose service-role keys to the browser.
+- Never expose server secret keys to the browser.
 - AI keys must remain server-side.
 - Validate all client input using Zod.
 - Validate uploaded file type and size.
@@ -628,8 +628,8 @@ Never commit secrets.
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=
 GEMINI_API_KEY=
 NEXT_PUBLIC_MAP_STYLE_URL=
 ```
