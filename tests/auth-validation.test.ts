@@ -134,6 +134,23 @@ describe("Phase 1 Validation & Auth Security Tests", () => {
       const result = createOrganizationSchema.safeParse(payload);
       assert.equal(result.success, false);
     });
+    test("rejects snake_case keys for organization creation (reproducing 400)", () => {
+      const browserPayload = {
+        name: "Demo Institutional Kitchen",
+        organization_type: "kitchen",
+        address: "Chennai, Tamil Nadu",
+        latitude: 13.0827,
+        longitude: 80.2707,
+        contact_phone: "+91-9000000000",
+      };
+
+      const result = createOrganizationSchema.safeParse(browserPayload);
+      assert.equal(result.success, false);
+      if (!result.success) {
+        const errors = result.error.flatten().fieldErrors;
+        assert.ok(errors.organizationType, "Must fail because organizationType is missing (sent organization_type)");
+      }
+    });
   });
 
   describe("Admin User Assignment Schema Validation", () => {
@@ -146,6 +163,22 @@ describe("Phase 1 Validation & Auth Security Tests", () => {
 
       const result = assignUserSchema.safeParse(payload);
       assert.equal(result.success, true);
+    });
+
+    test("rejects placeholder and snake_case assignment payload (reproducing 400)", () => {
+      const placeholderPayload = {
+        user_id: "YOUR_TEST_USER_UUID",
+        organization_id: "YOUR_NEW_ORGANIZATION_UUID",
+        role: "kitchen",
+      };
+
+      const result = assignUserSchema.safeParse(placeholderPayload);
+      assert.equal(result.success, false);
+      if (!result.success) {
+        const errors = result.error.flatten().fieldErrors;
+        assert.ok(errors.userId, "Must fail because userId is missing (sent user_id) or invalid UUID");
+        assert.ok(errors.organizationId, "Must fail because organizationId is missing (sent organization_id) or invalid UUID");
+      }
     });
 
     test("rejects non-UUID identifier", () => {
