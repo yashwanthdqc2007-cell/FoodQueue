@@ -50,6 +50,7 @@ export interface Database {
           contact_phone?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       profiles: {
         Row: {
@@ -82,6 +83,15 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       kitchens: {
         Row: {
@@ -120,6 +130,15 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "kitchens_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       meals: {
         Row: {
@@ -155,6 +174,15 @@ export interface Database {
           unit?: string;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "meals_kitchen_id_fkey";
+            columns: ["kitchen_id"];
+            isOneToOne: false;
+            referencedRelation: "kitchens";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       consumption_records: {
         Row: {
@@ -184,6 +212,15 @@ export interface Database {
           leftover_quantity?: number;
           recorded_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "consumption_records_meal_id_fkey";
+            columns: ["meal_id"];
+            isOneToOne: false;
+            referencedRelation: "meals";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       demand_predictions: {
         Row: {
@@ -222,6 +259,15 @@ export interface Database {
           model_version?: string;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "demand_predictions_kitchen_id_fkey";
+            columns: ["kitchen_id"];
+            isOneToOne: false;
+            referencedRelation: "kitchens";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       surplus_items: {
         Row: {
@@ -275,6 +321,22 @@ export interface Database {
           notes?: string | null;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "surplus_items_kitchen_id_fkey";
+            columns: ["kitchen_id"];
+            isOneToOne: false;
+            referencedRelation: "kitchens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "surplus_items_source_meal_id_fkey";
+            columns: ["source_meal_id"];
+            isOneToOne: false;
+            referencedRelation: "meals";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       waste_records: {
         Row: {
@@ -307,6 +369,15 @@ export interface Database {
           reason?: string | null;
           recorded_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "waste_records_kitchen_id_fkey";
+            columns: ["kitchen_id"];
+            isOneToOne: false;
+            referencedRelation: "kitchens";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       receivers: {
         Row: {
@@ -345,6 +416,15 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "receivers_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       redistribution_matches: {
         Row: {
@@ -374,6 +454,22 @@ export interface Database {
           status?: MatchStatus;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "redistribution_matches_surplus_id_fkey";
+            columns: ["surplus_id"];
+            isOneToOne: false;
+            referencedRelation: "surplus_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "redistribution_matches_receiver_id_fkey";
+            columns: ["receiver_id"];
+            isOneToOne: false;
+            referencedRelation: "receivers";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       pickup_requests: {
         Row: {
@@ -409,6 +505,22 @@ export interface Database {
           proof_image_path?: string | null;
           notes?: string | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: "pickup_requests_surplus_id_fkey";
+            columns: ["surplus_id"];
+            isOneToOne: false;
+            referencedRelation: "surplus_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "pickup_requests_receiver_id_fkey";
+            columns: ["receiver_id"];
+            isOneToOne: false;
+            referencedRelation: "receivers";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       impact_records: {
         Row: {
@@ -441,6 +553,15 @@ export interface Database {
           estimated_value_saved?: number | null;
           recorded_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "impact_records_surplus_id_fkey";
+            columns: ["surplus_id"];
+            isOneToOne: false;
+            referencedRelation: "surplus_items";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       notifications: {
         Row: {
@@ -470,8 +591,11 @@ export interface Database {
           read?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
     Enums: {
       app_role: AppRole;
       organization_type: OrganizationType;
@@ -483,5 +607,6 @@ export interface Database {
       match_status: MatchStatus;
       pickup_status: PickupStatus;
     };
+    CompositeTypes: Record<string, never>;
   };
 }
