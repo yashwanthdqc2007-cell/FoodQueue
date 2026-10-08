@@ -266,7 +266,7 @@ The platform strictly differentiates between client-side public credentials and 
 
 #### `GET /api/meals`
 - **Purpose:** List scheduled and past meals for the authenticated user's kitchen.
-- **Query Params:** `kitchenId` (optional, defaults to user's kitchen), `startDate`, `endDate`, `limit`, `offset`.
+- **Query Params:** `kitchenId` (optional, defaults to user's kitchen), `startDate`, `endDate`, `mealPeriod`, `limit`, `offset`.
 - **Success Response (200 OK):**
   ```json
   {
@@ -274,6 +274,7 @@ The platform strictly differentiates between client-side public credentials and 
       "meals": [
         {
           "id": "uuid",
+          "kitchenId": "uuid",
           "mealName": "Lunch Service",
           "mealDate": "2026-10-07",
           "mealPeriod": "lunch",
@@ -288,6 +289,69 @@ The platform strictly differentiates between client-side public credentials and 
     "error": null
   }
   ```
+
+#### `GET /api/meals/:id`
+- **Purpose:** Fetch single meal details including consumption status and linked surplus items.
+- **Auth Requirement:** Authenticated.
+- **Required Role:** `kitchen`, `admin`.
+- **Success Response (200 OK):**
+  ```json
+  {
+    "data": {
+      "id": "uuid",
+      "kitchenId": "uuid",
+      "mealName": "Lunch Service",
+      "mealDate": "2026-10-07",
+      "mealPeriod": "lunch",
+      "expectedConsumers": 820,
+      "plannedQuantity": 850,
+      "unit": "servings",
+      "consumptionRecord": {
+        "id": "uuid",
+        "actualConsumers": 790,
+        "preparedQuantity": 850,
+        "consumedQuantity": 805,
+        "leftoverQuantity": 45,
+        "recordedAt": "2026-10-07T14:45:00Z"
+      },
+      "surplusItems": []
+    },
+    "error": null
+  }
+  ```
+
+#### `PATCH /api/meals/:id`
+- **Purpose:** Update planned meal parameters before consumption recording.
+- **Auth Requirement:** Authenticated.
+- **Required Role:** `kitchen`, `admin`.
+- **Request Body (Zod Schema):**
+  ```typescript
+  z.object({
+    mealName: z.string().min(2).max(100).optional(),
+    mealDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    mealPeriod: z.enum(['breakfast', 'lunch', 'dinner', 'snack', 'other']).optional(),
+    expectedConsumers: z.number().int().nonnegative().optional(),
+    plannedQuantity: z.number().positive().optional(),
+    unit: z.string().min(1).max(30).optional()
+  })
+  ```
+- **Success Response (200 OK):**
+  ```json
+  {
+    "data": {
+      "id": "uuid",
+      "kitchenId": "uuid",
+      "mealName": "Updated Lunch Service",
+      "mealDate": "2026-10-07",
+      "mealPeriod": "lunch",
+      "expectedConsumers": 850,
+      "plannedQuantity": 890,
+      "unit": "servings"
+    },
+    "error": null
+  }
+  ```
+- **Error Cases:** `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `403 FORBIDDEN`, `422 UNPROCESSABLE_ENTITY` (if consumption is already recorded).
 
 #### `POST /api/consumption`
 - **Purpose:** Record actual consumers, prepared food, and leftover quantities post-service.
@@ -332,7 +396,10 @@ The platform strictly differentiates between client-side public credentials and 
   z.object({
     kitchenId: z.string().uuid(),
     predictionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    mealPeriod: z.enum(['breakfast', 'lunch', 'dinner', 'snack', 'other'])
+    mealPeriod: z.enum(['breakfast', 'lunch', 'dinner', 'snack', 'other']),
+    expectedConsumers: z.number().int().nonnegative().optional(),
+    unit: z.string().min(1).default('servings'),
+    baselinePortionRatio: z.number().positive().optional()
   })
   ```
 - **Success Response (200 OK):**
@@ -343,11 +410,49 @@ The platform strictly differentiates between client-side public credentials and 
       "kitchenId": "uuid",
       "predictionDate": "2026-10-08",
       "mealPeriod": "lunch",
-      "predictedConsumers": 810,
-      "recommendedQuantity": 830,
-      "predictedSurplus": 20,
-      "confidence": 0.85,
+      "predictedConsumers": 813,
+      "portionRatio": 1.05,
+      "recommendedQuantity": 879.64,
+      "predictedSurplus": 25.62,
+      "confidence": 0.95,
+      "confidenceTier": "HIGH",
+      "breakdown": {
+        "weekdayAverage": 817.5,
+        "sevenDayAverage": 810.0,
+        "periodAverage": 808.0,
+        "weekdaySampleCount": 4,
+        "sevenDaySampleCount": 7,
+        "periodSampleCount": 28
+      },
       "modelVersion": "mvp-baseline-v1"
+    },
+    "error": null
+  }
+  ```
+
+#### `GET /api/predictions/demand`
+- **Purpose:** Query historical demand predictions and compare forecasted metrics against actuals.
+- **Auth Requirement:** Authenticated.
+- **Required Role:** `kitchen`, `admin`.
+- **Query Params:** `kitchenId`, `startDate`, `endDate`, `mealPeriod`.
+- **Success Response (200 OK):**
+  ```json
+  {
+    "data": {
+      "predictions": [
+        {
+          "id": "uuid",
+          "kitchenId": "uuid",
+          "predictionDate": "2026-10-08",
+          "mealPeriod": "lunch",
+          "predictedConsumers": 810,
+          "recommendedQuantity": 830,
+          "predictedSurplus": 20,
+          "confidence": 0.85,
+          "modelVersion": "mvp-baseline-v1",
+          "createdAt": "2026-10-07T18:00:00Z"
+        }
+      ]
     },
     "error": null
   }

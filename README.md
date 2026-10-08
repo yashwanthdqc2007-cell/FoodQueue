@@ -4,9 +4,9 @@ A web-based platform for institutional kitchens and food-processing units that r
 
 ---
 
-## Current Status: Phase 0B — Application Foundation
+## Current Status: Phase 2A — Kitchen Intelligence Specification
 
-The repository foundation has been initialized with the locked technology stack (Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui tokens, Supabase SSR/Admin integration, and Zod environment validation). No product or dashboard features have been implemented in this phase.
+Phase 1 (Authentication & Role Onboarding) is complete and verified. Phase 2A defines the complete technical, operational, and mathematical specification for the Kitchen Intelligence Module ([KITCHEN_INTELLIGENCE_SPEC.md](KITCHEN_INTELLIGENCE_SPEC.md)). No kitchen feature code or migrations were implemented in this specification phase.
 
 ---
 
@@ -81,4 +81,5 @@ An unauthenticated health endpoint is available at `GET /api/health`:
 - **[Project Structure & Blueprint](PROJECT_STRUCTURE.md)**: Next.js App Router organization, component hierarchy, directory tree, and pre-implementation checklist.
 - **[Database Rules & Security Contract](DATABASE_RULES.md)**: PostgreSQL schema specification, enums, Row Level Security (RLS) policies, storage rules, and deterministic business logic.
 - **[API Specification](API_SPEC.md)**: REST API contract, Zod request schemas, standard `{ data, error }` response envelopes, and role-based permissions.
+- **[Kitchen Intelligence Specification](KITCHEN_INTELLIGENCE_SPEC.md)**: Technical specification for meal planning, deterministic demand forecasting (`mvp-baseline-v1`), consumption audits, and surplus handoff.
 - **[Supabase Setup Guide](docs/SUPABASE_SETUP.md)**: Manual project configuration, storage bucket provisioning, authentication settings, and environment variables.
