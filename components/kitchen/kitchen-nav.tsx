@@ -18,6 +18,7 @@ export function KitchenNav({ kitchenName, userEmail, role }: KitchenNavProps) {
     { label: "Dashboard", href: "/kitchen", icon: LayoutDashboard },
     { label: "Plan Meal", href: "/kitchen/meals/new", icon: PlusCircle },
     { label: "Audit Consumption", href: "/kitchen/consumption", icon: ClipboardCheck },
+    { label: "Surplus Hub", href: "/kitchen/surplus", icon: PackagePlus },
   ];
 
   return (

@@ -12,7 +12,11 @@ import {
   TrendingUp,
   ArrowRight,
   ShieldCheck,
+  Sparkles,
+  AlertTriangle,
 } from "lucide-react";
+import { RescueClock } from "@/components/kitchen/rescue-clock";
+import { computeRescueClock } from "@/lib/rules/rescue-clock";
 import type { MealModel, SurplusItemModel, KitchenModel, ProfileModel } from "@/types/models";
 
 export default async function KitchenDashboardPage() {
@@ -170,14 +174,27 @@ export default async function KitchenDashboardPage() {
           <div className="text-[11px] text-slate-400 mt-0.5">Planned for future dates</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <Link
+          href="/kitchen/surplus"
+          className="bg-white border border-slate-200 hover:border-emerald-300 rounded-xl p-4 shadow-xs transition group block"
+        >
           <div className="text-xs font-medium text-slate-500 flex items-center justify-between">
-            <span>Declared Surplus</span>
-            <PackagePlus className="w-4 h-4 text-emerald-600" />
+            <span>Surplus &amp; Rescue</span>
+            <Sparkles className="w-4 h-4 text-purple-600 group-hover:scale-110 transition" />
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">{surplusList.length}</div>
-          <div className="text-[11px] text-emerald-700 mt-0.5">Active redistribution items</div>
-        </div>
+          <div className="text-2xl font-bold text-slate-900 mt-1 flex items-baseline justify-between">
+            <span>{surplusList.length} <span className="text-xs font-normal text-slate-500">items</span></span>
+            {surplusList.some((s) => computeRescueClock(s.redistribution_deadline).status === "URGENT") && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                Urgent
+              </span>
+            )}
+          </div>
+          <div className="text-[11px] text-emerald-700 mt-0.5 font-medium flex items-center gap-1">
+            <span>View Surplus Hub</span>
+            <ArrowRight className="w-3 h-3" />
+          </div>
+        </Link>
       </div>
 
       {/* Main Two-Column Layout */}
@@ -344,7 +361,9 @@ export default async function KitchenDashboardPage() {
                 <PackagePlus className="w-4 h-4 text-emerald-600" />
                 <h3 className="text-sm font-bold text-slate-900">Declared Surplus Items</h3>
               </div>
-              <span className="text-xs text-slate-400 font-mono">{surplusList.length} items</span>
+              <Link href="/kitchen/surplus" className="text-xs font-semibold text-emerald-600 hover:underline">
+                View All ({surplusList.length})
+              </Link>
             </div>
 
             {surplusList.length === 0 ? (
@@ -355,24 +374,23 @@ export default async function KitchenDashboardPage() {
               </div>
             ) : (
               <div className="space-y-2.5">
-                {surplusList.map((item) => (
-                  <div key={item.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
+                {surplusList.slice(0, 5).map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/kitchen/surplus/${item.id}`}
+                    className="p-3 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-xs block transition"
+                  >
                     <div className="flex items-start justify-between">
                       <span className="font-bold text-slate-900">{item.food_name}</span>
                       <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                         {item.status}
                       </span>
                     </div>
-                    <div className="text-slate-600 mt-1">
-                      Quantity: <strong>{item.quantity} {item.unit}</strong>
+                    <div className="text-slate-600 mt-1 flex items-center justify-between">
+                      <span>Quantity: <strong>{item.quantity} {item.unit}</strong></span>
+                      <RescueClock deadlineIso={item.redistribution_deadline} compact />
                     </div>
-                    {item.redistribution_deadline && (
-                      <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>Deadline: {new Date(item.redistribution_deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                    )}
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

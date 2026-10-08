@@ -130,4 +130,6 @@ export interface SurplusItemModel {
   image_path?: string | null;
   notes?: string | null;
   created_at: string;
+  kitchens?: KitchenModel | null;
+  meals?: MealModel | null;
 }
