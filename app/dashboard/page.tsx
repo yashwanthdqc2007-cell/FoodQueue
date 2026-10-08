@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logoutAction } from "@/app/auth/actions";
 import type { ProfileModel } from "@/types/models";
@@ -169,13 +170,28 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          {/* Navigation Placeholder Notice */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm text-center">
-            <h3 className="text-sm font-semibold text-slate-900">Application Foundation Active</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-              Phase 1 authentication and profile session foundation is operational. Operational modules (Kitchen, Receiver, Matching, Analytics) will be unlocked in upcoming phases.
-            </p>
-          </div>
+          {/* Operational Kitchen Portal Quick Launch */}
+          {isAssigned && (profile?.role === "kitchen" || profile?.role === "admin") && (
+            <div className="bg-gradient-to-r from-emerald-700 to-teal-800 text-white rounded-xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-[11px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-600/80 text-emerald-100">
+                  Kitchen Intelligence Module Ready
+                </span>
+                <h3 className="text-lg font-bold mt-2">Open Kitchen Operations Hub</h3>
+                <p className="text-xs text-emerald-100/90 mt-1 max-w-md">
+                  Plan daily meal schedules, review baseline demand forecasts, record post-service consumption, and hand off leftover surplus.
+                </p>
+              </div>
+
+              <Link
+                href="/kitchen"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 text-xs font-bold transition shadow-sm shrink-0"
+              >
+                <ChefHat className="w-4 h-4" />
+                <span>Launch Kitchen Hub</span>
+              </Link>
+            </div>
+          )}
         </div>
       </main>
     </div>

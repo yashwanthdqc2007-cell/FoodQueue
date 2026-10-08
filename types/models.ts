@@ -1,4 +1,10 @@
-import type { AppRole, OrganizationType } from "./database.types";
+import type {
+  AppRole,
+  OrganizationType,
+  MealPeriod,
+  SurplusStatus,
+  SurplusCategory,
+} from "./database.types";
 
 export interface OrganizationModel {
   id: string;
@@ -9,6 +15,19 @@ export interface OrganizationModel {
   longitude?: number | null;
   contact_phone?: string | null;
   created_at?: string;
+}
+
+export interface KitchenModel {
+  id: string;
+  organization_id: string;
+  name: string;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone: string;
+  active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ProfileModel {
@@ -55,4 +74,60 @@ export interface AdminUserListItem {
   status: "assigned" | "pending_organization_assignment";
   createdAt: string;
   updatedAt: string;
+}
+
+export interface MealModel {
+  id: string;
+  kitchen_id: string;
+  meal_name: string;
+  meal_date: string;
+  meal_period: MealPeriod;
+  expected_consumers: number;
+  planned_quantity: number;
+  unit: string;
+  created_at: string;
+  consumption_records?: ConsumptionRecordModel[] | null;
+  surplus_items?: SurplusItemModel[] | null;
+}
+
+export interface ConsumptionRecordModel {
+  id: string;
+  meal_id: string;
+  actual_consumers: number;
+  prepared_quantity: number;
+  consumed_quantity: number;
+  leftover_quantity: number;
+  recorded_at: string;
+  meals?: MealModel | null;
+}
+
+export interface DemandPredictionModel {
+  id: string;
+  kitchen_id: string;
+  prediction_date: string;
+  meal_period: MealPeriod;
+  predicted_consumers: number;
+  recommended_quantity: number;
+  predicted_surplus: number;
+  confidence: number | null;
+  model_version: string;
+  created_at: string;
+}
+
+export interface SurplusItemModel {
+  id: string;
+  kitchen_id: string;
+  source_meal_id?: string | null;
+  food_name: string;
+  quantity: number;
+  unit: string;
+  prepared_at?: string | null;
+  reported_at: string;
+  redistribution_deadline?: string | null;
+  status: SurplusStatus;
+  category: SurplusCategory;
+  ai_confidence?: number | null;
+  image_path?: string | null;
+  notes?: string | null;
+  created_at: string;
 }
