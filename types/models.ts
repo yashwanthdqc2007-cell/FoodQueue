@@ -4,7 +4,21 @@ import type {
   MealPeriod,
   SurplusStatus,
   SurplusCategory,
+  ReceiverType,
+  MatchStatus,
+  PickupStatus,
 } from "./database.types";
+
+export type {
+  AppRole,
+  OrganizationType,
+  MealPeriod,
+  SurplusStatus,
+  SurplusCategory,
+  ReceiverType,
+  MatchStatus,
+  PickupStatus,
+};
 
 export interface OrganizationModel {
   id: string;
@@ -14,29 +28,16 @@ export interface OrganizationModel {
   latitude?: number | null;
   longitude?: number | null;
   contact_phone?: string | null;
-  created_at?: string;
-}
-
-export interface KitchenModel {
-  id: string;
-  organization_id: string;
-  name: string;
-  address?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  timezone: string;
-  active: boolean;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string;
 }
 
 export interface ProfileModel {
   id: string;
   full_name: string;
-  email: string | null;
-  phone: string | null;
+  email?: string | null;
+  phone?: string | null;
   role: AppRole;
-  organization_id: string | null;
+  organization_id?: string | null;
   created_at: string;
   updated_at: string;
   organizations?: OrganizationModel | null;
@@ -132,4 +133,57 @@ export interface SurplusItemModel {
   created_at: string;
   kitchens?: KitchenModel | null;
   meals?: MealModel | null;
+  redistribution_matches?: RedistributionMatchModel[] | null;
+}
+
+export interface KitchenModel {
+  id: string;
+  organization_id: string;
+  name: string;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  organizations?: OrganizationModel | null;
+}
+
+export interface ReceiverModel {
+  id: string;
+  organization_id: string;
+  receiver_type: ReceiverType;
+  max_capacity: number;
+  accepted_food_types: string[] | string;
+  operating_hours: Record<string, string> | string;
+  priority_level: number;
+  verified: boolean;
+  created_at: string;
+  updated_at: string;
+  organizations?: OrganizationModel | null;
+}
+
+export interface RedistributionMatchModel {
+  id: string;
+  surplus_id: string;
+  receiver_id: string;
+  match_score: number;
+  match_reason: string[] | Record<string, unknown>;
+  status: MatchStatus;
+  created_at: string;
+  surplus_items?: SurplusItemModel | null;
+  receivers?: ReceiverModel | null;
+}
+
+export interface PickupRequestModel {
+  id: string;
+  surplus_id: string;
+  receiver_id: string;
+  requested_at: string;
+  scheduled_at?: string | null;
+  picked_up_at?: string | null;
+  status: PickupStatus;
+  proof_image_path?: string | null;
+  notes?: string | null;
 }

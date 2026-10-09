@@ -82,10 +82,10 @@ export async function GET(request: NextRequest) {
   const formattedUsers: AdminUserListItem[] = (users || []).map((u) => ({
     id: u.id,
     fullName: u.full_name,
-    email: u.email,
-    phone: u.phone,
+    email: u.email ?? null,
+    phone: u.phone ?? null,
     role: u.role,
-    organizationId: u.organization_id,
+    organizationId: u.organization_id ?? null,
     organizationName: u.organizations?.name || null,
     organizationType: u.organizations?.organization_type || null,
     status: u.organization_id ? "assigned" : "pending_organization_assignment",

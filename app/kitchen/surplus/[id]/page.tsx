@@ -12,14 +12,48 @@ import {
   PackageCheck,
   Layers,
   Loader2,
+  MapPin,
+  CheckCircle2,
+  Building2,
+  Phone,
+  RefreshCw,
+  Compass,
+  Award,
 } from "lucide-react";
 import { RescueClock } from "@/components/kitchen/rescue-clock";
 import { AiClassifyModal } from "@/components/kitchen/ai-classify-modal";
+import { MapView, type MapMarkerLocation } from "@/components/shared/map-view";
 import type { RescueClockResult } from "@/lib/rules/rescue-clock";
 import type { RecoveryDecision } from "@/lib/rules/recovery-engine";
 
 interface SurplusDetailPageProps {
   params: Promise<{ id: string }>;
+}
+
+interface MatchCandidate {
+  matchId: string | null;
+  rank: number;
+  isTopRecommended: boolean;
+  receiverId: string;
+  organizationId?: string | null;
+  receiverName: string;
+  receiverType: string;
+  address: string | null;
+  contactPhone: string | null;
+  coordinates: { latitude: number; longitude: number } | null;
+  maxCapacity: number;
+  distanceKm?: number;
+  finalScore: number;
+  status: string;
+  breakdown?: {
+    distanceScore: number;
+    quantityScore: number;
+    urgencyScore: number;
+    capacityScore: number;
+    priorityScore: number;
+    distanceKm: number;
+  };
+  explainableReasons: string[];
 }
 
 interface SurplusDetail {
@@ -43,6 +77,8 @@ interface SurplusDetail {
     id: string;
     name: string;
     address: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
     timezone: string;
   } | null;
   sourceMeal?: {
@@ -62,8 +98,12 @@ export default function SurplusDetailPage({ params }: SurplusDetailPageProps) {
   const { id } = use(params);
 
   const [surplus, setSurplus] = useState<SurplusDetail | null>(null);
+  const [matches, setMatches] = useState<MatchCandidate[]>([]);
+  const [kitchenCoords, setKitchenCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingMatches, setIsGeneratingMatches] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [matchErrorMsg, setMatchErrorMsg] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -76,14 +116,26 @@ export default function SurplusDetailPage({ params }: SurplusDetailPageProps) {
       setIsLoading(true);
       setErrorMsg(null);
       try {
-        const res = await fetch(`/api/surplus/${id}`);
-        const json = await res.json();
+        const [surplusRes, matchesRes] = await Promise.all([
+          fetch(`/api/surplus/${id}`),
+          fetch(`/api/matching/${id}`),
+        ]);
+
+        const surplusJson = await surplusRes.json();
+        const matchesJson = await matchesRes.json();
 
         if (!ignore) {
-          if (!res.ok || json.error) {
-            throw new Error(json.error?.message || "Failed to load surplus item");
+          if (!surplusRes.ok || surplusJson.error) {
+            throw new Error(surplusJson.error?.message || "Failed to load surplus item");
           }
-          setSurplus(json.data);
+          setSurplus(surplusJson.data);
+
+          if (matchesRes.ok && matchesJson.data?.matches) {
+            setMatches(matchesJson.data.matches);
+            if (matchesJson.data.kitchenCoordinates) {
+              setKitchenCoords(matchesJson.data.kitchenCoordinates);
+            }
+          }
         }
       } catch (err: unknown) {
         if (!ignore) {
@@ -102,6 +154,33 @@ export default function SurplusDetailPage({ params }: SurplusDetailPageProps) {
       ignore = true;
     };
   }, [id, refreshKey]);
+
+  async function handleGenerateMatches() {
+    setIsGeneratingMatches(true);
+    setMatchErrorMsg(null);
+    try {
+      const res = await fetch("/api/matching/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ surplusId: id }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error?.message || "Failed to generate matches");
+      }
+
+      setMatches(json.data.matches || []);
+      if (json.data.kitchenCoordinates) {
+        setKitchenCoords(json.data.kitchenCoordinates);
+      }
+      setRefreshKey((k) => k + 1);
+    } catch (err: unknown) {
+      setMatchErrorMsg(err instanceof Error ? err.message : "Failed to run matching engine");
+    } finally {
+      setIsGeneratingMatches(false);
+    }
+  }
 
   async function handleUpdateStatus(newStatus: string) {
     setIsUpdatingStatus(true);
@@ -157,8 +236,30 @@ export default function SurplusDetailPage({ params }: SurplusDetailPageProps) {
     unknown: "bg-slate-100 text-slate-700 border-slate-200",
   }[surplus.category] || "bg-slate-100 text-slate-700 border-slate-200";
 
+  const topMatch = matches.find((m) => m.isTopRecommended) || matches[0];
+
+  // Map markers
+  const originLocation = {
+    name: surplus.kitchen?.name || "Origin Kitchen",
+    latitude: kitchenCoords?.latitude || Number(surplus.kitchen?.latitude) || 13.0827,
+    longitude: kitchenCoords?.longitude || Number(surplus.kitchen?.longitude) || 80.2707,
+  };
+
+  const destinationMarkers: MapMarkerLocation[] = matches
+    .filter((m) => m.coordinates?.latitude && m.coordinates?.longitude)
+    .map((m) => ({
+      id: m.receiverId,
+      name: m.receiverName,
+      latitude: m.coordinates!.latitude,
+      longitude: m.coordinates!.longitude,
+      type: "receiver",
+      score: m.finalScore,
+      distanceKm: m.distanceKm,
+      isTopRecommended: m.isTopRecommended,
+    }));
+
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-6xl">
       {/* Top Navigation */}
       <div className="flex items-center justify-between">
         <Link
@@ -197,10 +298,24 @@ export default function SurplusDetailPage({ params }: SurplusDetailPageProps) {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
-            onClick={() => setIsAiModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs transition"
+            disabled={isGeneratingMatches || surplus.status !== "active"}
+            onClick={handleGenerateMatches}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs transition disabled:opacity-50"
           >
-            <Sparkles className="w-4 h-4" />
+            {isGeneratingMatches ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            <span>Generate Receiver Matches</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsAiModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition"
+          >
+            <Sparkles className="w-4 h-4 text-purple-300" />
             <span>{surplus.aiConfidence ? "Re-Inspect with Gemini" : "Analyze Photo with AI"}</span>
           </button>
         </div>
@@ -389,6 +504,214 @@ export default function SurplusDetailPage({ params }: SurplusDetailPageProps) {
         </div>
       </div>
 
+      {/* ============================================================ */}
+      {/* PHASE 4: SMART MATCHING & REDISTRIBUTION SECTION */}
+      {/* ============================================================ */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-purple-100 text-purple-700">
+                <Sparkles className="w-5 h-5" />
+              </span>
+              <h2 className="text-xl font-bold text-slate-900">
+                Redistribution Matching &amp; Recommendations
+              </h2>
+            </div>
+            <p className="text-xs text-slate-500">
+              Deterministic multi-factor matching engine (Distance 40%, Quantity 25%, Urgency 20%, Capacity 10%, Priority 5%).
+            </p>
+          </div>
+
+          <button
+            type="button"
+            disabled={isGeneratingMatches || surplus.status !== "active"}
+            onClick={handleGenerateMatches}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs transition disabled:opacity-50 self-start sm:self-auto"
+          >
+            {isGeneratingMatches ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            <span>{matches.length > 0 ? "Regenerate Matches" : "Run Matching Engine"}</span>
+          </button>
+        </div>
+
+        {matchErrorMsg && (
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+            {matchErrorMsg}
+          </div>
+        )}
+
+        {matches.length === 0 ? (
+          <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center flex flex-col items-center justify-center gap-3">
+            <Compass className="w-10 h-10 text-slate-300" />
+            <h3 className="text-sm font-bold text-slate-800">No active matches generated yet</h3>
+            <p className="text-xs text-slate-500 max-w-md">
+              Click &ldquo;Run Matching Engine&rdquo; to deterministically score and rank nearby verified receivers for this {surplus.quantity} {surplus.unit} {surplus.foodName} batch.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Top Recommended Receiver Highlight Banner */}
+            {topMatch && (
+              <div className="relative rounded-2xl bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 p-6 sm:p-7 text-white shadow-lg overflow-hidden border border-purple-800">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-xs font-black tracking-wide flex items-center gap-1 shadow-xs">
+                        <Award className="w-3.5 h-3.5" />
+                        <span>Recommended ✓</span>
+                      </span>
+                      <span className="text-xs text-purple-200 uppercase font-semibold">
+                        Rank #1 Candidate
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-2xl font-black text-white tracking-tight">
+                        {topMatch.receiverName}
+                      </h3>
+                      <p className="text-xs text-purple-200/80 mt-0.5 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-purple-300" />
+                        <span className="capitalize">{topMatch.receiverType.replace("_", " ")}</span> &bull;{" "}
+                        <MapPin className="w-3.5 h-3.5 text-purple-300" />
+                        <span>{topMatch.address || "Chennai, Tamil Nadu"}</span>
+                      </p>
+                    </div>
+
+                    {/* Rationale badges */}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {topMatch.explainableReasons.map((r, i) => (
+                        <span
+                          key={i}
+                          className="text-xs font-medium bg-white/10 border border-white/20 text-purple-100 px-2.5 py-1 rounded-lg backdrop-blur-xs flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{r}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Score Box */}
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20 text-center shrink-0 min-w-44">
+                    <span className="text-[11px] uppercase font-bold text-purple-200 tracking-wider block">
+                      Match Score
+                    </span>
+                    <div className="text-4xl font-black text-white mt-1">
+                      {topMatch.finalScore}
+                      <span className="text-base font-medium text-purple-300">/100</span>
+                    </div>
+                    <span className="inline-block text-[11px] text-emerald-300 font-bold mt-1">
+                      {topMatch.distanceKm !== undefined ? `${topMatch.distanceKm} km transit` : "High Proximity"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Ranked Alternatives List */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Ranked Redistribution Candidates ({matches.length})
+              </h3>
+
+              <div className="space-y-3">
+                {matches.map((m) => (
+                  <div
+                    key={m.receiverId}
+                    className={`p-4 sm:p-5 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                      m.isTopRecommended
+                        ? "bg-purple-50/50 border-purple-200"
+                        : "bg-white border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3.5">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
+                          m.isTopRecommended
+                            ? "bg-purple-600 text-white"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {m.rank}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-slate-900">{m.receiverName}</h4>
+                          {m.isTopRecommended && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                              Top Recommendation
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-400 capitalize">
+                            &bull; {m.receiverType.replace("_", " ")}
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-slate-500 flex flex-wrap items-center gap-3">
+                          {m.distanceKm !== undefined && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-slate-400" />
+                              <span>{m.distanceKm} km away</span>
+                            </span>
+                          )}
+                          <span>
+                            Capacity: <strong className="text-slate-700">{m.maxCapacity} {surplus.unit}</strong>
+                          </span>
+                          {m.status && (
+                            <span className="font-mono uppercase text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">
+                              Status: {m.status}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Explainable snippets */}
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {m.explainableReasons.slice(0, 3).map((r, i) => (
+                            <span
+                              key={i}
+                              className="text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md"
+                            >
+                              ✓ {r}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right sm:border-l sm:border-slate-100 sm:pl-5 shrink-0 flex sm:flex-col items-center sm:items-end justify-between">
+                      <span className="text-xs text-slate-400 font-semibold uppercase">Score</span>
+                      <span className="text-2xl font-black text-purple-700">{m.finalScore}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Map Visualization */}
+            <div className="space-y-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-tight flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-purple-600" />
+                  <span>Geographic Redistribution Map</span>
+                </span>
+                <span className="text-xs text-slate-400">MapLibre GL JS</span>
+              </div>
+
+              <MapView
+                origin={originLocation}
+                destinations={destinationMarkers}
+                height="380px"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* AI Modal */}
       {isAiModalOpen && (
         <AiClassifyModal
@@ -407,3 +730,4 @@ export default function SurplusDetailPage({ params }: SurplusDetailPageProps) {
     </div>
   );
 }
+

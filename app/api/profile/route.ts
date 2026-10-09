@@ -63,10 +63,10 @@ export async function GET() {
     profile: {
       id: currentProfile.id,
       fullName: currentProfile.full_name,
-      email: currentProfile.email,
-      phone: currentProfile.phone,
+      email: currentProfile.email ?? null,
+      phone: currentProfile.phone ?? null,
       role: currentProfile.role,
-      organizationId: currentProfile.organization_id,
+      organizationId: currentProfile.organization_id ?? null,
       status: currentProfile.organization_id ? "assigned" : "pending_organization_assignment",
       organization: currentProfile.organizations || null,
       createdAt: currentProfile.created_at,
