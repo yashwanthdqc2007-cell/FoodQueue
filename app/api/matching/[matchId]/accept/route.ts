@@ -66,7 +66,29 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return errorResponse(authResult.error.code, authResult.error.message, authResult.error.status);
     }
 
-    // 3. Verify match state is 'recommended'
+    // 3. Check if match is already accepted (Idempotent replay)
+    if (match.status === "accepted") {
+      const { data: existingPickups } = await supabase
+        .from("pickup_requests")
+        .select("id, status, requested_at, scheduled_at, picked_up_at")
+        .eq("surplus_id", surplus.id)
+        .eq("receiver_id", receiver.id)
+        .order("requested_at", { ascending: false })
+        .returns<PickupRequestModel[]>();
+
+      const existingPickup = existingPickups?.[0];
+
+      return successResponse({
+        matchId: match.id,
+        surplusId: surplus.id,
+        receiverId: receiver.id,
+        status: "accepted",
+        pickupRequestId: existingPickup?.id || null,
+        message: "Redistribution match is already accepted. Existing pickup transaction returned.",
+      });
+    }
+
+    // If status is not recommended and not accepted, reject
     if (match.status !== "recommended") {
       return errorResponse(
         "CONFLICT",
@@ -75,11 +97,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // 4. Verify surplus state is 'active' and not expired
-    if (surplus.status !== "active") {
+    // 4. Verify surplus state is 'active' or 'matched' and not expired
+    if (surplus.status !== "active" && surplus.status !== "matched") {
       return errorResponse(
         "CONFLICT",
-        `Surplus item is no longer available (current status: '${surplus.status}').`,
+        `Surplus item is no longer available for acceptance (current status: '${surplus.status}').`,
         409
       );
     }
@@ -108,28 +130,45 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Update surplus -> 'matched'
-    const { error: surplusUpdateError } = await (supabase as any)
-      .from("surplus_items")
-      .update({ status: "matched" })
-      .eq("id", surplus.id);
+    // Update surplus -> 'matched' (if not already matched/pickup_pending)
+    if (surplus.status === "active") {
+      const { error: surplusUpdateError } = await (supabase as any)
+        .from("surplus_items")
+        .update({ status: "matched" })
+        .eq("id", surplus.id);
 
-    if (surplusUpdateError) {
-      console.error("Surplus status update error:", surplusUpdateError);
+      if (surplusUpdateError) {
+        console.error("Surplus status update error:", surplusUpdateError);
+      }
     }
 
-    // Create pickup_request -> status: 'requested'
-    const { data: pickupRecords, error: pickupError } = await (supabase as any)
+    // Check if pickup_request already exists before inserting
+    const { data: existingPickups } = await supabase
       .from("pickup_requests")
-      .insert({
-        surplus_id: surplus.id,
-        receiver_id: receiver.id,
-        status: "requested",
-        notes: notes || "Auto-generated pickup request from accepted match",
-      })
-      .select("id, status, requested_at");
+      .select("id, status, requested_at")
+      .eq("surplus_id", surplus.id)
+      .eq("receiver_id", receiver.id)
+      .returns<PickupRequestModel[]>();
 
-    const pickup = (pickupRecords as PickupRequestModel[])?.[0];
+    let pickup = existingPickups?.[0];
+
+    if (!pickup) {
+      const { data: pickupRecords, error: pickupError } = await (supabase as any)
+        .from("pickup_requests")
+        .insert({
+          surplus_id: surplus.id,
+          receiver_id: receiver.id,
+          status: "requested",
+          notes: notes || "Auto-generated pickup request from accepted match",
+        })
+        .select("id, status, requested_at");
+
+      if (pickupError) {
+        console.error("Pickup creation error:", pickupError);
+      } else {
+        pickup = (pickupRecords as PickupRequestModel[])?.[0];
+      }
+    }
 
     return successResponse({
       matchId: match.id,

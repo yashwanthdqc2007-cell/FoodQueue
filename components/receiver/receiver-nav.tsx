@@ -17,6 +17,7 @@ export function ReceiverNav({ receiverName, userEmail, role }: ReceiverNavProps)
   const navItems = [
     { label: "Surplus Opportunities", href: "/receiver", icon: Sparkles },
     { label: "Accepted Matches", href: "/receiver/matches", icon: CheckCircle2 },
+    { label: "Pickups", href: "/receiver/pickups", icon: Clock },
   ];
 
   return (

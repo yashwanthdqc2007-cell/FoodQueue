@@ -186,4 +186,29 @@ export interface PickupRequestModel {
   status: PickupStatus;
   proof_image_path?: string | null;
   notes?: string | null;
+  surplus_items?: SurplusItemModel | null;
+  receivers?: ReceiverModel | null;
 }
+
+export interface ImpactRecordModel {
+  id: string;
+  surplus_id: string;
+  food_saved_quantity: number;
+  estimated_meals_saved: number;
+  estimated_waste_diverted: number;
+  estimated_co2e_avoided?: number | null;
+  estimated_value_saved?: number | null;
+  recorded_at: string;
+  surplus_items?: SurplusItemModel | null;
+}
+
+export interface NotificationModel {
+  id: string;
+  user_id: string;
+  notification_type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
