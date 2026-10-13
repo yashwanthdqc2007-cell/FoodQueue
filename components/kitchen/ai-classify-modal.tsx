@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Image from "next/image";
 import {
   X,
   UploadCloud,
@@ -134,23 +133,24 @@ export function AiClassifyModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white rounded-2xl max-w-xl w-full border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in">
+      <div className="bg-brand-surface rounded-3xl max-w-xl w-full border border-brand-border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-purple-100 text-purple-700">
-              <Sparkles className="w-5 h-5" />
+        <div className="p-5 border-b border-brand-border flex items-center justify-between bg-brand-surface">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-brand-primary/20 text-brand-mint shadow-2xs">
+              <Sparkles className="w-5 h-5 text-brand-mint" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Gemini Vision Visual Inspection</h2>
-              <p className="text-xs text-slate-500 font-medium">Batch: {foodName}</p>
+              <h2 className="text-base font-extrabold text-brand-text">Gemini Vision Visual Inspection</h2>
+              <p className="text-xs text-brand-muted font-semibold">Surplus Batch: {foodName}</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+            className="p-1.5 rounded-xl text-brand-muted hover:text-brand-text hover:bg-brand-card transition"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -159,15 +159,15 @@ export function AiClassifyModal({
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-5">
           {/* Advisory Notice Banner */}
-          <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-amber-900">
-            <ShieldCheck className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+          <div className="bg-amber-950/30 border border-amber-800/50 rounded-2xl p-4 flex items-start gap-3 text-xs text-amber-200">
+            <ShieldCheck className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
             <div>
-              <span className="font-bold">Advisory Visual Assessment:</span> AI observations provide heuristic categorization assistance and do not constitute a legal or microbiological safety guarantee.
+              <span className="font-extrabold text-amber-300">Advisory Visual Assessment:</span> AI observations provide heuristic categorization assistance and do not replace standard institutional food safety protocols.
             </div>
           </div>
 
           {errorMsg && (
-            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-start gap-2 text-xs text-rose-700">
+            <div className="bg-rose-950/30 border border-rose-800/50 rounded-2xl p-4 flex items-start gap-2.5 text-xs text-rose-300">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{errorMsg}</span>
             </div>
@@ -175,7 +175,7 @@ export function AiClassifyModal({
 
           {/* Image Upload Area */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-2">
+            <label className="block text-xs font-bold text-brand-text mb-2">
               Food Batch Photo (Private Storage)
             </label>
 
@@ -188,18 +188,18 @@ export function AiClassifyModal({
             />
 
             {previewUrl ? (
-              <div className="relative rounded-xl border border-slate-200 overflow-hidden bg-slate-100 aspect-video flex items-center justify-center group">
-                <Image
+              <div className="relative rounded-2xl border border-brand-border overflow-hidden bg-brand-card aspect-video flex items-center justify-center group shadow-2xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={previewUrl}
                   alt="Surplus preview"
-                  fill
-                  className="object-cover"
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1.5 rounded-lg bg-white/90 text-slate-800 text-xs font-semibold shadow-xs hover:bg-white transition flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-xl bg-brand-card text-brand-text border border-brand-border text-xs font-bold shadow-xs hover:bg-brand-surface transition flex items-center gap-1.5"
                   >
                     <Camera className="w-3.5 h-3.5" />
                     <span>Change Photo</span>
@@ -209,14 +209,14 @@ export function AiClassifyModal({
             ) : (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-emerald-500 hover:bg-emerald-50/20 transition cursor-pointer flex flex-col items-center justify-center gap-2"
+                className="border-2 border-dashed border-brand-border rounded-2xl p-6 text-center hover:border-brand-primary hover:bg-brand-card/50 transition cursor-pointer flex flex-col items-center justify-center gap-2"
               >
-                <div className="p-3 rounded-full bg-slate-100 text-slate-500">
+                <div className="p-3 rounded-full bg-brand-card text-brand-muted">
                   <UploadCloud className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Click to upload photo</span>
-                  <span className="text-[11px] text-slate-400">JPEG, PNG, WebP up to 5 MB</span>
+                  <span className="text-xs font-bold text-brand-text block">Click to upload photo</span>
+                  <span className="text-[11px] text-brand-muted">JPEG, PNG, WebP up to 5 MB</span>
                 </div>
               </div>
             )}
@@ -224,7 +224,7 @@ export function AiClassifyModal({
 
           {/* Operator Context Notes */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-brand-text mb-1.5">
               Operator Notes / Preparation Details (Optional)
             </label>
             <input
@@ -232,48 +232,48 @@ export function AiClassifyModal({
               placeholder="e.g. Cooked 2 hours ago, kept at 65°C hot holding"
               value={userNotes}
               onChange={(e) => setUserNotes(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-brand-border text-xs text-brand-text placeholder-brand-muted/50 bg-brand-card focus:outline-none focus:ring-2 focus:ring-brand-primary"
             />
           </div>
 
           {/* AI Inspection Result View */}
           {aiResult && (
-            <div className="bg-purple-50/60 border border-purple-200 rounded-2xl p-4 space-y-3 animate-in fade-in">
+            <div className="bg-brand-card border border-brand-border rounded-2xl p-4 space-y-3 animate-in fade-in">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-purple-600" />
+                <span className="text-xs font-bold text-brand-text flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-brand-primary" />
                   <span>AI Visual Classification Summary</span>
                 </span>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-200 text-purple-900">
+                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-brand-primary/20 text-brand-mint border border-brand-primary/30">
                   {Math.round(aiResult.confidence * 100)}% Confidence
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs pt-1">
-                <div>
-                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">Identified Item</span>
-                  <span className="font-bold text-slate-900">{aiResult.foodType}</span>
+                <div className="p-3 rounded-xl bg-brand-surface border border-brand-border">
+                  <span className="text-[10px] text-brand-muted uppercase font-bold block">Identified Item</span>
+                  <span className="font-extrabold text-brand-text">{aiResult.foodType}</span>
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-500 uppercase font-semibold block">Assigned Category</span>
-                  <span className="font-bold uppercase text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md inline-block">
+                <div className="p-3 rounded-xl bg-brand-surface border border-brand-border">
+                  <span className="text-[10px] text-brand-muted uppercase font-bold block">Assigned Category</span>
+                  <span className="font-bold uppercase text-brand-mint bg-brand-primary/20 px-2 py-0.5 rounded-md inline-block mt-0.5">
                     {aiResult.category.replace("_", " ")}
                   </span>
                 </div>
               </div>
 
-              <div className="text-xs bg-white p-3 rounded-xl border border-purple-100">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Visible Condition</span>
-                <p className="text-slate-700">{aiResult.visibleCondition}</p>
+              <div className="text-xs bg-brand-surface p-3.5 rounded-xl border border-brand-border">
+                <span className="text-[10px] text-brand-muted uppercase font-bold block mb-1">Visible Condition</span>
+                <p className="text-brand-text">{aiResult.visibleCondition}</p>
               </div>
 
               {aiResult.recoveryDecision && (
-                <div className="p-3 bg-emerald-100/60 border border-emerald-200 rounded-xl text-xs">
-                  <div className="flex items-center justify-between font-bold text-emerald-950">
+                <div className="p-3.5 bg-emerald-950/40 border border-emerald-800/50 rounded-xl text-xs">
+                  <div className="flex items-center justify-between font-extrabold text-emerald-200">
                     <span>Deterministic Decision:</span>
-                    <span className="uppercase tracking-wider">{aiResult.recoveryDecision.path}</span>
+                    <span className="uppercase tracking-wider text-brand-mint">{aiResult.recoveryDecision.path}</span>
                   </div>
-                  <p className="text-[11px] text-emerald-800 mt-1">{aiResult.recoveryDecision.actionRecommendation}</p>
+                  <p className="text-[11px] text-emerald-300/90 mt-1 font-medium">{aiResult.recoveryDecision.actionRecommendation}</p>
                 </div>
               )}
             </div>
@@ -281,11 +281,11 @@ export function AiClassifyModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">
+        <div className="p-4 sm:p-5 border-t border-brand-border bg-brand-surface flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+            className="px-4 py-2.5 rounded-xl border border-brand-border text-xs font-semibold text-brand-muted hover:text-brand-text hover:bg-brand-card transition"
           >
             {aiResult ? "Close" : "Cancel"}
           </button>
@@ -294,7 +294,7 @@ export function AiClassifyModal({
             type="button"
             onClick={handleUploadAndClassify}
             disabled={isUploading || isAnalyzing || (!selectedFile && !hasUploadedImage)}
-            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs transition disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold shadow-xs transition disabled:opacity-50"
           >
             {isUploading ? (
               <>

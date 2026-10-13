@@ -5,12 +5,12 @@ import { authenticateReceiverUser } from "@/lib/receiver/auth";
 import type { RedistributionMatchModel, ReceiverModel } from "@/types/models";
 
 interface RouteParams {
-  params: Promise<{ matchId: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export async function POST(_request: NextRequest, { params }: RouteParams) {
   try {
-    const { matchId } = await params;
+    const { id: matchId } = await params;
     if (!matchId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(matchId)) {
       return errorResponse("VALIDATION_ERROR", "Invalid match UUID parameter", 400);
     }

@@ -8,17 +8,19 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  ShieldCheck,
   Building2,
   Phone,
-  Layers,
-  ChevronDown,
-  ChevronUp,
   Loader2,
   AlertTriangle,
+  UtensilsCrossed,
+  Croissant,
+  Leaf,
+  ShieldAlert,
+  HelpCircle,
 } from "lucide-react";
 import { RescueClock } from "@/components/kitchen/rescue-clock";
 import type { RescueClockResult } from "@/lib/rules/rescue-clock";
+import { useToast } from "@/components/ui/toast";
 
 export interface OpportunityItem {
   matchId: string;
@@ -52,22 +54,54 @@ interface OpportunityCardProps {
 }
 
 export function OpportunityCard({ opportunity, onActionComplete }: OpportunityCardProps) {
+  const toast = useToast();
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(opportunity.status === "accepted");
 
   const isExpired = opportunity.rescueClock.isExpired || opportunity.surplusStatus === "expired";
   const isAvailable = opportunity.status === "recommended" && !isExpired && opportunity.surplusStatus === "active";
 
-  const categoryColor = {
-    edible_surplus: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    reusable: "bg-blue-100 text-blue-800 border-blue-200",
-    organic: "bg-amber-100 text-amber-800 border-amber-200",
-    unsafe: "bg-rose-100 text-rose-800 border-rose-200",
-    unknown: "bg-slate-100 text-slate-700 border-slate-200",
-  }[opportunity.category] || "bg-slate-100 text-slate-700 border-slate-200";
+  const categoryBadge = {
+    edible_surplus: {
+      bg: "bg-emerald-950/70 text-emerald-300 border-emerald-700/50",
+      label: "Cooked Meals",
+      icon: UtensilsCrossed,
+      fallbackGradient: "from-[#122A1D] via-[#163625] to-[#0E1B14]",
+    },
+    reusable: {
+      bg: "bg-amber-950/70 text-amber-300 border-amber-700/50",
+      label: "Bakery & Pantry",
+      icon: Croissant,
+      fallbackGradient: "from-[#2A2012] via-[#332614] to-[#141009]",
+    },
+    organic: {
+      bg: "bg-teal-950/70 text-teal-300 border-teal-700/50",
+      label: "Organic Surplus",
+      icon: Leaf,
+      fallbackGradient: "from-[#0F2624] via-[#143331] to-[#0A1918]",
+    },
+    unsafe: {
+      bg: "bg-rose-950/70 text-rose-300 border-rose-700/50",
+      label: "Unsafe / Discard",
+      icon: ShieldAlert,
+      fallbackGradient: "from-[#2A1212] via-[#331616] to-[#140808]",
+    },
+    unknown: {
+      bg: "bg-brand-surface text-brand-muted border-brand-border",
+      label: "Uncategorized",
+      icon: HelpCircle,
+      fallbackGradient: "from-[#19211D] to-[#121916]",
+    },
+  }[opportunity.category] || {
+    bg: "bg-brand-surface text-brand-muted border-brand-border",
+    label: opportunity.category,
+    icon: UtensilsCrossed,
+    fallbackGradient: "from-[#19211D] to-[#121916]",
+  };
+
+  const FallbackIcon = categoryBadge.icon;
 
   async function handleAccept() {
     setIsAccepting(true);
@@ -85,9 +119,12 @@ export function OpportunityCard({ opportunity, onActionComplete }: OpportunityCa
       }
 
       setIsSuccess(true);
+      toast.success(`Accepted ${opportunity.foodName}. Pickup coordination generated.`, "Match Accepted");
       if (onActionComplete) onActionComplete();
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Error accepting match");
+      const msg = err instanceof Error ? err.message : "Error accepting match";
+      setActionError(msg);
+      toast.error(msg, "Acceptance Failed");
     } finally {
       setIsAccepting(false);
     }
@@ -109,9 +146,12 @@ export function OpportunityCard({ opportunity, onActionComplete }: OpportunityCa
         throw new Error(json.error?.message || "Failed to decline surplus match");
       }
 
+      toast.info(`Declined recommendation for ${opportunity.foodName}`, "Match Declined");
       if (onActionComplete) onActionComplete();
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Error declining match");
+      const msg = err instanceof Error ? err.message : "Error declining match";
+      setActionError(msg);
+      toast.error(msg, "Action Failed");
     } finally {
       setIsRejecting(false);
     }
@@ -119,194 +159,180 @@ export function OpportunityCard({ opportunity, onActionComplete }: OpportunityCa
 
   return (
     <div
-      className={`bg-white border rounded-2xl shadow-xs overflow-hidden transition hover:shadow-md ${
+      className={`glass-card bg-brand-card border rounded-3xl overflow-hidden transition-all duration-200 hover:shadow-2xl ${
         isSuccess
-          ? "border-emerald-300 ring-1 ring-emerald-400/20"
+          ? "border-emerald-600/60 ring-2 ring-emerald-500/20"
           : isExpired
-          ? "border-slate-200 opacity-60"
-          : "border-slate-200"
+          ? "border-brand-border/40 opacity-50"
+          : "border-brand-border hover:border-brand-primary/40"
       }`}
     >
-      {/* Card Header Bar */}
-      <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/50">
-        <div className="flex items-center gap-2.5">
-          <span className={`text-[11px] uppercase font-bold px-2.5 py-0.5 rounded-md border ${categoryColor}`}>
-            {opportunity.category.replace("_", " ")}
-          </span>
-          <span className="text-xs text-slate-400">&bull;</span>
-          <span className="text-xs font-semibold text-slate-600 flex items-center gap-1">
-            <Building2 className="w-3.5 h-3.5 text-slate-400" />
-            <span>{opportunity.kitchen.name}</span>
+      {/* Top Visual Image / Fallback Art Section */}
+      <div className="relative w-full h-44 sm:h-48 overflow-hidden bg-brand-bg-secondary">
+        {opportunity.signedImageUrl ? (
+          <Image
+            src={opportunity.signedImageUrl}
+            alt={opportunity.foodName}
+            fill
+            unoptimized
+            className="object-cover transition-transform duration-300 hover:scale-105"
+          />
+        ) : (
+          <div
+            className={`w-full h-full bg-gradient-to-br ${categoryBadge.fallbackGradient} flex flex-col items-center justify-center p-4 text-center relative`}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-2 shadow-xs">
+              <FallbackIcon className="w-7 h-7 text-brand-mint" />
+            </div>
+            <span className="text-[11px] font-bold text-brand-text tracking-wide uppercase">
+              {categoryBadge.label}
+            </span>
+            <span className="text-[10px] text-brand-muted mt-0.5">
+              Verified Kitchen Batch
+            </span>
+            <div className="absolute bottom-2 right-2 text-[9px] font-medium text-brand-muted/60 bg-black/40 px-2 py-0.5 rounded-full">
+              Category Fallback Artwork
+            </div>
+          </div>
+        )}
+
+        {/* Floating Badges Overlay */}
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          <span className={`text-[11px] font-bold px-3 py-1 rounded-full border backdrop-blur-md shadow-xs ${categoryBadge.bg}`}>
+            {categoryBadge.label}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Match Score Badge */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-            <span>Match Score: {opportunity.matchScore}</span>
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          {/* Match Score Chip */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-950/80 backdrop-blur-md text-purple-300 border border-purple-600/50 text-xs font-black shadow-xs">
+            <Sparkles className="w-3.5 h-3.5 text-brand-violet" />
+            <span>Score: {opportunity.matchScore}</span>
           </div>
+        </div>
 
-          {opportunity.status === "accepted" && (
-            <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Accepted</span>
-            </span>
-          )}
-
-          {opportunity.status === "rejected" && (
-            <span className="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold">
-              Declined
-            </span>
-          )}
+        {/* Quantity Overlay on Image Bottom */}
+        <div className="absolute bottom-3 left-3 bg-brand-card/90 backdrop-blur-md border border-brand-border/80 px-3 py-1.5 rounded-xl shadow-md">
+          <span className="text-sm font-black text-brand-text">
+            {opportunity.quantity}{" "}
+            <span className="text-xs font-bold text-brand-primary uppercase">{opportunity.unit}</span>
+          </span>
         </div>
       </div>
 
-      {/* Card Body */}
-      <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Col 1: Food & Quantity Details */}
-        <div className="space-y-3">
-          {opportunity.signedImageUrl && (
-            <div className="relative w-full h-32 rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
-              <Image
-                src={opportunity.signedImageUrl}
-                alt={opportunity.foodName}
-                fill
-                className="object-cover"
-              />
-            </div>
-          )}
-
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">{opportunity.foodName}</h3>
-            <p className="text-2xl font-extrabold text-slate-800 mt-1">
-              {opportunity.quantity}{" "}
-              <span className="text-xs font-medium text-slate-500 uppercase">{opportunity.unit}</span>
-            </p>
+      {/* Card Content Body */}
+      <div className="p-5 sm:p-6 space-y-4">
+        {/* Title & Facility */}
+        <div className="space-y-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-lg sm:text-xl font-black text-brand-text tracking-tight line-clamp-1">
+              {opportunity.foodName}
+            </h3>
           </div>
 
-          <div className="text-xs text-slate-600 space-y-1">
-            <div className="flex items-center gap-1 text-slate-500">
-              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="truncate">{opportunity.kitchen.address}</span>
-            </div>
-            {opportunity.kitchen.contactPhone && (
-              <div className="flex items-center gap-1 text-slate-500">
-                <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>{opportunity.kitchen.contactPhone}</span>
-              </div>
-            )}
+          <div className="flex items-center gap-2 text-xs text-brand-muted">
+            <Building2 className="w-3.5 h-3.5 text-brand-primary shrink-0" />
+            <span className="font-semibold text-brand-text truncate">{opportunity.kitchen.name}</span>
+          </div>
+
+          <div className="flex items-start gap-1.5 text-xs text-brand-muted pt-0.5">
+            <MapPin className="w-3.5 h-3.5 text-brand-muted shrink-0 mt-0.5" />
+            <span className="line-clamp-1">{opportunity.kitchen.address}</span>
           </div>
         </div>
 
-        {/* Col 2: Rescue Clock & Time Window */}
-        <div className="space-y-3 flex flex-col justify-between">
-          <div className="space-y-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight block">
-              Rescue Window
+        {/* Rescue Clock & Timeline Strip */}
+        <div className="p-3.5 rounded-2xl bg-brand-surface border border-brand-border space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1">
+              <Clock className="w-3 h-3 text-brand-amber" />
+              <span>Rescue Deadline</span>
             </span>
-            <RescueClock
-              deadlineIso={opportunity.redistributionDeadline}
-              initialClock={opportunity.rescueClock}
-            />
+            <span className="text-xs font-bold text-brand-text">
+              {opportunity.redistributionDeadline
+                ? new Date(opportunity.redistributionDeadline).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                : "Open Window"}
+            </span>
           </div>
 
-          <div className="text-[11px] text-slate-500 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-            <div className="flex justify-between">
-              <span>Reported:</span>
-              <span className="text-slate-700 font-medium">
-                {new Date(opportunity.reportedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Deadline:</span>
-              <span className="text-slate-700 font-medium">
-                {opportunity.redistributionDeadline
-                  ? new Date(opportunity.redistributionDeadline).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                  : "N/A"}
-              </span>
-            </div>
-          </div>
+          <RescueClock
+            deadlineIso={opportunity.redistributionDeadline}
+            initialClock={opportunity.rescueClock}
+          />
         </div>
 
-        {/* Col 3: Explainability & Actions */}
-        <div className="space-y-3 flex flex-col justify-between">
-          <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight block mb-2">
-              Why You Were Matched
+        {/* Match Justifications */}
+        {opportunity.explainableReasons && opportunity.explainableReasons.length > 0 && (
+          <div className="space-y-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-brand-muted block">
+              Match Determinants
             </span>
-            <div className="space-y-1.5">
-              {opportunity.explainableReasons.map((reason, idx) => (
-                <div
+            <div className="flex flex-wrap gap-1.5">
+              {opportunity.explainableReasons.slice(0, 2).map((reason, idx) => (
+                <span
                   key={idx}
-                  className="flex items-start gap-1.5 text-xs text-slate-700 font-medium bg-purple-50/50 border border-purple-100 rounded-lg px-2.5 py-1.5"
+                  className="text-[11px] font-semibold text-brand-text bg-brand-surface border border-brand-border px-2.5 py-1 rounded-lg flex items-center gap-1"
                 >
-                  <span className="text-purple-600 font-bold">✓</span>
+                  <span className="text-brand-primary font-bold">✓</span>
                   <span>{reason}</span>
-                </div>
+                </span>
               ))}
             </div>
           </div>
+        )}
 
-          {/* Action Buttons */}
-          <div className="pt-2 border-t border-slate-100 space-y-2">
-            {actionError && (
-              <div className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
-                <span>{actionError}</span>
-              </div>
-            )}
-
-            {isAvailable ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  disabled={isAccepting || isRejecting}
-                  onClick={handleAccept}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition shadow-xs disabled:opacity-50"
-                >
-                  {isAccepting ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                  )}
-                  <span>Accept Batch</span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={isAccepting || isRejecting}
-                  onClick={handleReject}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold transition disabled:opacity-50"
-                >
-                  {isRejecting ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <XCircle className="w-3.5 h-3.5" />
-                  )}
-                  <span>Decline</span>
-                </button>
-              </div>
-            ) : isSuccess ? (
-              <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-semibold text-center flex items-center justify-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Match accepted! Pickup request generated.</span>
-              </div>
-            ) : isExpired ? (
-              <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-500 font-semibold text-center">
-                Rescue window expired
-              </div>
-            ) : null}
+        {/* Error message if action failed */}
+        {actionError && (
+          <div className="p-2.5 rounded-xl bg-brand-red-light border border-brand-red/30 text-xs text-brand-red flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span>{actionError}</span>
           </div>
+        )}
+
+        {/* Actions Bar */}
+        <div className="pt-2 border-t border-brand-border/60">
+          {isAvailable ? (
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                disabled={isAccepting || isRejecting}
+                onClick={handleAccept}
+                className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-brand-forest-dark text-xs font-extrabold transition shadow-md disabled:opacity-50"
+              >
+                {isAccepting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                )}
+                <span>Accept Batch</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isAccepting || isRejecting}
+                onClick={handleReject}
+                className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-brand-border bg-brand-surface hover:bg-brand-card text-brand-muted hover:text-brand-text text-xs font-bold transition disabled:opacity-50"
+              >
+                {isRejecting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5" />
+                )}
+                <span>Decline</span>
+              </button>
+            </div>
+          ) : isSuccess ? (
+            <div className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-700/50 text-xs text-emerald-300 font-bold text-center flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>Match accepted! Pickup generated.</span>
+            </div>
+          ) : isExpired ? (
+            <div className="p-3 rounded-xl bg-brand-surface border border-brand-border text-xs text-brand-muted font-bold text-center">
+              Rescue window expired
+            </div>
+          ) : null}
         </div>
       </div>
-
-      {/* Expandable Notes / Details Toggle */}
-      {opportunity.notes && (
-        <div className="px-5 py-2.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span className="italic">Note: &ldquo;{opportunity.notes}&rdquo;</span>
-        </div>
-      )}
     </div>
   );
 }

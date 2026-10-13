@@ -60,13 +60,14 @@ export default async function ReceiverLayout({
   const receiver = receivers?.[0] || null;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans">
+    <div className="min-h-screen bg-brand-bg text-brand-text flex flex-col md:flex-row font-sans">
       <ReceiverNav
-        receiverName={profile.organizations?.name || "Community Partner"}
+        receiverName={profile.organizations?.name || "Hope Community Centre"}
         userEmail={userData.user.email}
+        userFullName={profile.full_name}
         role={profile.role}
       />
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 min-w-0 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
         {children}
       </main>
     </div>

@@ -79,12 +79,29 @@ export async function GET(request: NextRequest) {
     return errorResponse("INTERNAL_SERVER_ERROR", listError.message || "Failed to list users", 500);
   }
 
+  // Safely fetch auth user_metadata to surface requested_workspace without schema changes
+  const metaMap = new Map<string, "kitchen" | "receiver">();
+  try {
+    const { data: authData } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 100 });
+    if (authData?.users) {
+      for (const au of authData.users) {
+        const req = au.user_metadata?.requested_workspace;
+        if (req === "kitchen" || req === "receiver") {
+          metaMap.set(au.id, req);
+        }
+      }
+    }
+  } catch {
+    // Non-blocking fallback if auth admin list is restricted
+  }
+
   const formattedUsers: AdminUserListItem[] = (users || []).map((u) => ({
     id: u.id,
     fullName: u.full_name,
     email: u.email ?? null,
     phone: u.phone ?? null,
     role: u.role,
+    requestedWorkspace: metaMap.get(u.id) || null,
     organizationId: u.organization_id ?? null,
     organizationName: u.organizations?.name || null,
     organizationType: u.organizations?.organization_type || null,

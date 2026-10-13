@@ -10,12 +10,96 @@ type OrgRow = Database["public"]["Tables"]["organizations"]["Row"];
 type KitchenRow = Database["public"]["Tables"]["kitchens"]["Row"];
 type ReceiverRow = Database["public"]["Tables"]["receivers"]["Row"];
 
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+
+  // 1. Verify caller session
+  const { data: userData, error: authError } = await supabase.auth.getUser();
+  if (authError || !userData?.user) {
+    return errorResponse("UNAUTHORIZED", "Missing or invalid authentication session", 401);
+  }
+
+  // 2. Verify caller role is admin
+  const { data: callerProfiles, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userData.user.id)
+    .returns<Pick<ProfileRow, "role">[]>();
+
+  const callerProfile = callerProfiles?.[0];
+
+  if (profileError || callerProfile?.role !== "admin") {
+    return errorResponse("FORBIDDEN", "Admin privileges required to view organization directory", 403);
+  }
+
+  // 3. Query parameters
+  const { searchParams } = new URL(request.url);
+  const type = searchParams.get("type");
+  const search = searchParams.get("search")?.trim().toLowerCase();
+  const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
+  const offset = parseInt(searchParams.get("offset") || "0", 10);
+
+  const adminClient = createAdminClient();
+
+  let query = adminClient
+    .from("organizations")
+    .select(
+      `
+      id,
+      name,
+      organization_type,
+      address,
+      latitude,
+      longitude,
+      contact_phone,
+      created_at,
+      kitchens (
+        id,
+        name,
+        timezone,
+        active
+      ),
+      receivers (
+        id,
+        receiver_type,
+        max_capacity,
+        priority_level,
+        verified
+      )
+    `,
+      { count: "exact" }
+    )
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (type) {
+    query = query.eq("organization_type", type as Database["public"]["Enums"]["organization_type"]);
+  }
+
+  if (search) {
+    query = query.ilike("name", `%${search}%`);
+  }
+
+  const { data: orgs, count, error: listError } = await query;
+
+  if (listError) {
+    return errorResponse("INTERNAL_SERVER_ERROR", listError.message || "Failed to list organizations", 500);
+  }
+
+  return successResponse({
+    organizations: orgs || [],
+    total: count ?? (orgs || []).length,
+    limit,
+    offset,
+  });
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
   // 1. Verify authenticated caller
   const { data: userData, error: authError } = await supabase.auth.getUser();
-  if (authError || !userData.user) {
+  if (authError || !userData?.user) {
     return errorResponse("UNAUTHORIZED", "Missing or invalid authentication session", 401);
   }
 

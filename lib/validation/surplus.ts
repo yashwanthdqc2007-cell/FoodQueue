@@ -35,11 +35,11 @@ export const aiClassificationRequestSchema = z.object({
 });
 
 export const aiStructuredOutputSchema = z.object({
-  foodType: z.string().trim().min(1, "Food type is required").max(100),
+  foodType: z.string().trim().min(1, "Food type is required").max(300),
   category: surplusCategoryEnum,
-  visibleCondition: z.string().trim().min(1, "Visible condition description is required").max(300),
+  visibleCondition: z.string().trim().min(1, "Visible condition description is required").max(2000),
   confidence: z.number().min(0, "Confidence must be between 0 and 1").max(1, "Confidence must be between 0 and 1"),
-  notes: z.string().max(1000).optional().default(""),
+  notes: z.string().max(2000).optional().default(""),
 });
 
 export const updateSurplusSchema = z.object({

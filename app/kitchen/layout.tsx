@@ -57,13 +57,14 @@ export default async function KitchenLayout({
   const currentKitchen = kitchens?.[0] || null;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-brand-bg text-brand-text flex flex-col md:flex-row font-sans">
       <KitchenNav
-        kitchenName={currentKitchen?.name || "Kitchen Operations"}
+        kitchenName={currentKitchen?.name || "Green Valley Main Kitchen"}
         userEmail={profile.email || userData.user.email}
+        userFullName={profile.full_name}
         role={profile.role}
       />
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 min-w-0 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
         {children}
       </main>
     </div>

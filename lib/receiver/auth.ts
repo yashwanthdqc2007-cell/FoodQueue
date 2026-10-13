@@ -141,11 +141,22 @@ export async function authenticateReceiverUser(
     };
   }
 
+  let receiverOrg: OrganizationModel | null = (profile as any).organizations || null;
+  if (!receiverOrg && receiver?.organization_id) {
+    const { data: orgs } = await supabase
+      .from("organizations")
+      .select("id, name, organization_type, address, latitude, longitude, contact_phone")
+      .eq("id", receiver.organization_id)
+      .returns<OrganizationModel[]>();
+
+    receiverOrg = orgs?.[0] || null;
+  }
+
   return {
     user: userData.user,
     profile,
     receiver,
-    organization: profile.organizations || null,
+    organization: receiverOrg,
     isAdmin,
     error: null,
   };

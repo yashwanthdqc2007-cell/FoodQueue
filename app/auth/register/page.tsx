@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Shield, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Loader2, AlertCircle, Info } from "lucide-react";
 import { registerAction } from "@/app/auth/actions";
+import { FoodQueueLogo } from "@/components/brand/foodqueue-logo";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
@@ -19,14 +22,25 @@ export default function RegisterPage() {
     try {
       const formData = new FormData(e.currentTarget);
       const res = await registerAction(formData);
+      if (res?.success && res.redirectTo) {
+        router.push(res.redirectTo);
+        router.refresh();
+        return;
+      }
       if (res && !res.success) {
         if (res.error) setError(res.error);
         if (res.fieldErrors) setFieldErrors(res.fieldErrors);
       }
     } catch (err: unknown) {
-      if (err instanceof Error && err.message.includes("NEXT_REDIRECT")) {
-        throw err;
+      if (
+        (err as any)?.digest?.includes("NEXT_REDIRECT") ||
+        (err instanceof Error && err.message.includes("NEXT_REDIRECT"))
+      ) {
+        router.push("/dashboard");
+        router.refresh();
+        return;
       }
+      console.error("Registration error:", err);
       setError("An unexpected error occurred during registration. Please try again.");
     } finally {
       setLoading(false);
@@ -34,30 +48,27 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm p-6 sm:p-8">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
-            <Shield className="w-6 h-6" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900">FoodQueue</span>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-brand-bg">
+      <div className="w-full max-w-md bg-brand-surface border border-brand-border rounded-3xl shadow-xl p-6 sm:p-8 my-8">
+        <div className="flex items-center justify-center mb-6">
+          <FoodQueueLogo href="/" variant="full" width={180} height={60} priority />
         </div>
 
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Create an account</h1>
-          <p className="text-sm text-slate-500 mt-1">Join the food intelligence &amp; rescue network</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-brand-text">Create an account</h1>
+          <p className="text-xs sm:text-sm text-brand-muted mt-1">Join the food intelligence &amp; rescue network</p>
         </div>
 
         {error && (
-          <div className="mb-5 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <div className="mb-5 p-3.5 rounded-xl bg-brand-red/10 border border-brand-red/25 text-brand-red text-xs flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0 text-brand-red" />
             <span>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="fullName" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label htmlFor="fullName" className="block text-xs font-bold text-brand-muted uppercase tracking-wider mb-1.5">
               Full Name
             </label>
             <input
@@ -66,15 +77,15 @@ export default function RegisterPage() {
               type="text"
               required
               placeholder="e.g. Chef Ramesh Kumar"
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-brand-border text-sm text-brand-text placeholder:text-brand-muted/60 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition bg-brand-card"
             />
             {fieldErrors.fullName && (
-              <p className="text-xs text-rose-600 mt-1">{fieldErrors.fullName[0]}</p>
+              <p className="text-xs text-brand-red mt-1">{fieldErrors.fullName[0]}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label htmlFor="email" className="block text-xs font-bold text-brand-muted uppercase tracking-wider mb-1.5">
               Email Address
             </label>
             <input
@@ -84,15 +95,15 @@ export default function RegisterPage() {
               autoComplete="email"
               required
               placeholder="you@institution.org"
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-brand-border text-sm text-brand-text placeholder:text-brand-muted/60 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition bg-brand-card"
             />
             {fieldErrors.email && (
-              <p className="text-xs text-rose-600 mt-1">{fieldErrors.email[0]}</p>
+              <p className="text-xs text-brand-red mt-1">{fieldErrors.email[0]}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label htmlFor="password" className="block text-xs font-bold text-brand-muted uppercase tracking-wider mb-1.5">
               Password (min 8 characters)
             </label>
             <input
@@ -102,15 +113,15 @@ export default function RegisterPage() {
               autoComplete="new-password"
               required
               placeholder="••••••••"
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-brand-border text-sm text-brand-text placeholder:text-brand-muted/60 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition bg-brand-card"
             />
             {fieldErrors.password && (
-              <p className="text-xs text-rose-600 mt-1">{fieldErrors.password[0]}</p>
+              <p className="text-xs text-brand-red mt-1">{fieldErrors.password[0]}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label htmlFor="confirmPassword" className="block text-xs font-bold text-brand-muted uppercase tracking-wider mb-1.5">
               Confirm Password
             </label>
             <input
@@ -120,23 +131,24 @@ export default function RegisterPage() {
               autoComplete="new-password"
               required
               placeholder="••••••••"
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-brand-border text-sm text-brand-text placeholder:text-brand-muted/60 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition bg-brand-card"
             />
             {fieldErrors.confirmPassword && (
-              <p className="text-xs text-rose-600 mt-1">{fieldErrors.confirmPassword[0]}</p>
+              <p className="text-xs text-brand-red mt-1">{fieldErrors.confirmPassword[0]}</p>
             )}
           </div>
 
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+          <div className="p-3.5 bg-brand-card/80 border border-brand-border rounded-xl text-xs text-brand-muted flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-brand-primary shrink-0 mt-0.5" />
             <p>
-              Note: Upon registration, your profile will be created in an unassigned state until provisioned by an administrator.
+              Your profile is registered with standard credentials. An administrator provisions your account to an authorized kitchen or receiver organization.
             </p>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+            className="w-full py-3 px-4 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-brand-bg font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
           >
             {loading ? (
               <>
@@ -152,9 +164,9 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-xs text-slate-500 border-t border-slate-100 pt-4">
+        <div className="mt-6 text-center text-xs text-brand-muted border-t border-brand-border pt-4">
           Already have an account?{" "}
-          <Link href="/auth/login" className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline">
+          <Link href="/auth/login" className="font-bold text-brand-primary hover:underline">
             Sign in
           </Link>
         </div>

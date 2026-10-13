@@ -2,21 +2,22 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowLeft,
-  CheckCircle2,
   Building2,
   MapPin,
   Phone,
-  Clock,
-  Sparkles,
   PackageCheck,
   Loader2,
   RefreshCw,
+  Sparkles,
+  Calendar,
+  ArrowRight,
 } from "lucide-react";
 import type { OpportunityItem } from "@/components/receiver/opportunity-card";
 import { RescueClock } from "@/components/kitchen/rescue-clock";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function ReceiverMatchesPage() {
   const [matches, setMatches] = useState<OpportunityItem[]>([]);
@@ -59,93 +60,88 @@ export default function ReceiverMatchesPage() {
   }, [refreshKey]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 text-brand-text">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+      <PageHeader
+        title="Accepted Redistribution Matches"
+        description="Surplus food batches accepted by your organization awaiting pickup scheduling or collection handover."
+        backHref="/receiver"
+        backLabel="Back to Marketplace"
+        actions={
           <div className="flex items-center gap-2">
             <Link
-              href="/receiver"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+              href="/receiver/pickups"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-violet hover:bg-brand-violet/90 text-brand-forest-dark text-xs font-extrabold shadow-xs transition"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Opportunities</span>
+              <Calendar className="w-4 h-4" />
+              <span>Go to Pickups</span>
             </Link>
+            <button
+              type="button"
+              onClick={() => setRefreshKey((k) => k + 1)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-surface border border-brand-border hover:bg-brand-card text-xs font-bold text-brand-text shadow-xs transition"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Refresh</span>
+            </button>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Accepted Redistribution Matches</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Surplus food batches your organization has accepted for recovery and redistribution.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setRefreshKey((k) => k + 1)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition self-start sm:self-auto"
-        >
-          <RefreshCw className="w-4 h-4" />
-          <span>Refresh</span>
-        </button>
-      </div>
+        }
+      />
 
       {isLoading ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-16 text-center flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
-          <span className="text-xs font-semibold text-slate-600">Loading accepted matches...</span>
+        <div className="glass-card bg-brand-card border border-brand-border rounded-3xl p-16 text-center flex flex-col items-center justify-center gap-3 shadow-xs">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-violet" />
+          <span className="text-xs font-bold text-brand-muted">Loading accepted matches...</span>
         </div>
       ) : errorMsg ? (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-center text-xs text-rose-700">
+        <div className="bg-brand-red-light border border-brand-red/30 rounded-2xl p-6 text-center text-xs text-brand-red">
           {errorMsg}
         </div>
       ) : matches.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
-          <PackageCheck className="w-10 h-10 text-slate-300" />
-          <h3 className="text-base font-bold text-slate-900">No accepted matches yet</h3>
-          <p className="text-xs text-slate-500 max-w-sm">
-            When you accept matched surplus opportunities from the opportunities feed, they will appear here.
-          </p>
-          <Link
-            href="/receiver"
-            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-bold shadow-xs hover:bg-purple-700 transition"
-          >
-            <span>Browse Opportunities</span>
-          </Link>
-        </div>
+        <EmptyState
+          icon={PackageCheck}
+          title="No accepted matches yet"
+          description="When you accept matched surplus opportunities from the surplus feed, they will appear here ready for coordination."
+          action={{
+            label: "Browse Marketplace Feed",
+            href: "/receiver",
+          }}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {matches.map((m) => (
             <div
               key={m.matchId}
-              className="bg-white border border-emerald-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition space-y-4"
+              className="glass-card bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xs hover:border-brand-violet/40 transition space-y-4"
             >
-              <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="flex items-start justify-between gap-3 border-b border-brand-border/60 pb-3">
                 <div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 uppercase tracking-tight border border-emerald-200">
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-950/70 text-emerald-300 uppercase tracking-tight border border-emerald-700/50">
                     Accepted Match
                   </span>
-                  <h3 className="text-base font-bold text-slate-900 mt-1">{m.foodName}</h3>
-                  <p className="text-xs text-slate-500">{m.kitchen.name}</p>
+                  <h3 className="text-base font-bold text-brand-text mt-1.5">{m.foodName}</h3>
+                  <p className="text-xs font-semibold text-brand-muted">{m.kitchen.name}</p>
                 </div>
 
                 <div className="text-right">
-                  <span className="text-xl font-extrabold text-slate-900">
-                    {m.quantity} <span className="text-xs font-normal text-slate-500">{m.unit}</span>
+                  <span className="text-xl font-black text-brand-text">
+                    {m.quantity} <span className="text-xs font-bold text-brand-muted uppercase">{m.unit}</span>
                   </span>
-                  <div className="text-[11px] text-purple-700 font-bold mt-0.5">
-                    Score: {m.matchScore}
+                  <div className="text-[11px] text-brand-violet font-extrabold mt-0.5">
+                    Match Score: {m.matchScore}
                   </div>
                 </div>
               </div>
 
               {/* Kitchen Location & Contact */}
-              <div className="bg-slate-50 rounded-xl p-3 text-xs text-slate-600 space-y-1.5 border border-slate-100">
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">{m.kitchen.address}</span>
+              <div className="bg-brand-surface rounded-xl p-3 text-xs text-brand-muted space-y-1.5 border border-brand-border">
+                <div className="flex items-start gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-brand-muted shrink-0 mt-0.5" />
+                  <span className="line-clamp-2">{m.kitchen.address}</span>
                 </div>
                 {m.kitchen.contactPhone && (
                   <div className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <Phone className="w-3.5 h-3.5 text-brand-muted shrink-0" />
                     <span>{m.kitchen.contactPhone}</span>
                   </div>
                 )}
@@ -153,8 +149,8 @@ export default function ReceiverMatchesPage() {
 
               {/* Rescue Clock */}
               <div className="space-y-1.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block">
-                  Rescue Clock
+                <span className="text-[10px] font-extrabold text-brand-muted uppercase tracking-wider block">
+                  Redistribution Deadline
                 </span>
                 <RescueClock
                   deadlineIso={m.redistributionDeadline}
@@ -162,21 +158,26 @@ export default function ReceiverMatchesPage() {
                 />
               </div>
 
-              {/* Reasons */}
-              <div className="pt-2 border-t border-slate-100">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-1">
-                  Match Rationale
-                </span>
+              {/* Reasons & Action */}
+              <div className="pt-2 border-t border-brand-border/60 flex items-center justify-between gap-2">
                 <div className="flex flex-wrap gap-1.5">
-                  {m.explainableReasons.map((r, i) => (
+                  {m.explainableReasons.slice(0, 2).map((r, i) => (
                     <span
                       key={i}
-                      className="text-[11px] font-medium bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md border border-purple-100"
+                      className="text-[10px] font-semibold bg-brand-surface text-brand-text px-2 py-0.5 rounded-md border border-brand-border"
                     >
                       {r}
                     </span>
                   ))}
                 </div>
+
+                <Link
+                  href="/receiver/pickups"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-brand-violet hover:text-purple-300"
+                >
+                  <span>Coordinate Pickup</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
           ))}

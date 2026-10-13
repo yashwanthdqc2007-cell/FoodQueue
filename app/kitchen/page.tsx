@@ -9,15 +9,18 @@ import {
   CheckCircle2,
   AlertCircle,
   Utensils,
-  TrendingUp,
   ArrowRight,
   ShieldCheck,
   Sparkles,
-  AlertTriangle,
+  MapPin,
+  Leaf,
 } from "lucide-react";
 import { RescueClock } from "@/components/kitchen/rescue-clock";
 import { computeRescueClock } from "@/lib/rules/rescue-clock";
 import type { MealModel, SurplusItemModel, KitchenModel, ProfileModel } from "@/types/models";
+import { KpiCard } from "@/components/ui/kpi-card";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function KitchenDashboardPage() {
   const supabase = await createClient();
@@ -45,13 +48,15 @@ export default async function KitchenDashboardPage() {
 
   if (!kitchen) {
     return (
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center max-w-xl mx-auto my-12">
-        <AlertCircle className="w-10 h-10 text-amber-600 mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-amber-900">No Active Kitchen Assigned</h2>
-        <p className="text-xs text-amber-700 mt-1 max-w-md mx-auto">
-          Your organization does not have an active kitchen facility provisioned yet. Please contact an administrator to complete setup.
-        </p>
-      </div>
+      <EmptyState
+        icon={AlertCircle}
+        title="No Active Kitchen Assigned"
+        description="Your organization does not have an active kitchen facility provisioned yet. Please contact an administrator to complete setup."
+        action={{
+          label: "Return to Main Hub",
+          href: "/dashboard",
+        }}
+      />
     );
   }
 
@@ -112,24 +117,27 @@ export default async function KitchenDashboardPage() {
   const surplusList = surplusData || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Top Banner / Actions */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="glass-card bg-brand-surface border border-brand-border rounded-2xl p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="primary" size="sm">
               Active Facility
-            </span>
-            <span className="text-xs text-slate-400 font-mono">Timezone: {kitchen.timezone}</span>
+            </Badge>
+            <span className="text-xs text-brand-muted font-medium">Timezone: {kitchen.timezone}</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">{kitchen.name}</h1>
-          <p className="text-xs text-slate-500 mt-0.5">{kitchen.address || "Institutional Kitchen Operations"}</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-brand-text tracking-tight">{kitchen.name}</h1>
+          <p className="text-xs sm:text-sm text-brand-muted mt-0.5 flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-brand-primary shrink-0" />
+            <span>{kitchen.address || "Institutional Food Service Facility"}</span>
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href="/kitchen/meals/new"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-xs sm:text-sm font-bold shadow-xs transition"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Plan New Meal</span>
@@ -137,9 +145,9 @@ export default async function KitchenDashboardPage() {
 
           <Link
             href="/kitchen/consumption"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-brand-border bg-brand-card hover:bg-brand-surface text-brand-text text-xs sm:text-sm font-bold shadow-2xs transition"
           >
-            <ClipboardCheck className="w-4 h-4 text-emerald-600" />
+            <ClipboardCheck className="w-4 h-4 text-brand-primary" />
             <span>Record Consumption</span>
           </Link>
         </div>
@@ -147,54 +155,41 @@ export default async function KitchenDashboardPage() {
 
       {/* KPI Overview Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="text-xs font-medium text-slate-500 flex items-center justify-between">
-            <span>Today&apos;s Services</span>
-            <Calendar className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">{todaysMeals.length}</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">{todayStr}</div>
-        </div>
+        <KpiCard
+          title="Today's Meal Services"
+          value={todaysMeals.length}
+          unit="services"
+          subtitle={todayStr}
+          icon={Calendar}
+          variant="forest"
+        />
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="text-xs font-medium text-slate-500 flex items-center justify-between">
-            <span>Awaiting Audit</span>
-            <AlertCircle className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="text-2xl font-bold text-amber-900 mt-1">{awaitingAudit.length}</div>
-          <div className="text-[11px] text-amber-700 mt-0.5">Past un-audited meals</div>
-        </div>
+        <KpiCard
+          title="Awaiting Mass-Balance Audit"
+          value={awaitingAudit.length}
+          unit="past meals"
+          subtitle="Past un-audited services"
+          icon={AlertCircle}
+          variant="amber"
+        />
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="text-xs font-medium text-slate-500 flex items-center justify-between">
-            <span>Upcoming Scheduled</span>
-            <Clock className="w-4 h-4 text-blue-500" />
-          </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">{upcomingMeals.length}</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">Planned for future dates</div>
-        </div>
+        <KpiCard
+          title="Upcoming Scheduled"
+          value={upcomingMeals.length}
+          unit="planned"
+          subtitle="Future production schedules"
+          icon={Clock}
+          variant="primary"
+        />
 
-        <Link
-          href="/kitchen/surplus"
-          className="bg-white border border-slate-200 hover:border-emerald-300 rounded-xl p-4 shadow-xs transition group block"
-        >
-          <div className="text-xs font-medium text-slate-500 flex items-center justify-between">
-            <span>Surplus &amp; Rescue</span>
-            <Sparkles className="w-4 h-4 text-purple-600 group-hover:scale-110 transition" />
-          </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1 flex items-baseline justify-between">
-            <span>{surplusList.length} <span className="text-xs font-normal text-slate-500">items</span></span>
-            {surplusList.some((s) => computeRescueClock(s.redistribution_deadline).status === "URGENT") && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                Urgent
-              </span>
-            )}
-          </div>
-          <div className="text-[11px] text-emerald-700 mt-0.5 font-medium flex items-center gap-1">
-            <span>View Surplus Hub</span>
-            <ArrowRight className="w-3 h-3" />
-          </div>
-        </Link>
+        <KpiCard
+          title="Active Declared Surplus"
+          value={surplusList.length}
+          unit="batches"
+          subtitle="In rescue lifecycle"
+          icon={Sparkles}
+          variant="violet"
+        />
       </div>
 
       {/* Main Two-Column Layout */}
@@ -202,23 +197,23 @@ export default async function KitchenDashboardPage() {
         {/* Left 2 Cols: Today & Upcoming Meals */}
         <div className="lg:col-span-2 space-y-6">
           {/* Today's Meals Section */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+          <div className="glass-card bg-brand-surface border border-brand-border rounded-2xl p-6 shadow-md">
+            <div className="flex items-center justify-between mb-4 border-b border-brand-border pb-3.5">
               <div className="flex items-center gap-2">
-                <Utensils className="w-4 h-4 text-emerald-600" />
-                <h2 className="text-sm font-bold text-slate-900">Today&apos;s Meal Services</h2>
+                <Utensils className="w-4 h-4 text-brand-primary" />
+                <h2 className="text-sm font-bold text-brand-text">Today&apos;s Meal Services</h2>
               </div>
-              <span className="text-xs text-slate-400">{todayStr}</span>
+              <span className="text-xs font-semibold text-brand-muted">{todayStr}</span>
             </div>
 
             {todaysMeals.length === 0 ? (
-              <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                <Calendar className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="text-xs font-semibold text-slate-700">No Meals Planned for Today</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Plan an upcoming service to enable forecasting and audits.</p>
+              <div className="text-center py-8 bg-brand-card/40 rounded-xl border border-dashed border-brand-border">
+                <Calendar className="w-8 h-8 text-brand-muted mx-auto mb-2" />
+                <p className="text-xs font-bold text-brand-text">No Meals Planned for Today</p>
+                <p className="text-[11px] text-brand-muted mt-0.5">Plan an upcoming service to enable forecasting and audits.</p>
                 <Link
                   href="/kitchen/meals/new"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 mt-3 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 mt-3 rounded-xl bg-brand-primary text-white text-xs font-bold hover:bg-brand-primary-hover transition shadow-2xs"
                 >
                   <PlusCircle className="w-3.5 h-3.5" />
                   <span>Plan Today&apos;s Meal</span>
@@ -231,33 +226,34 @@ export default async function KitchenDashboardPage() {
                   return (
                     <div
                       key={meal.id}
-                      className="p-4 rounded-xl border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/20 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      className="p-4 rounded-xl border border-brand-border hover:border-brand-primary/40 hover:bg-brand-card/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-brand-card"
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-900">{meal.meal_name}</span>
-                          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                          <span className="text-sm font-bold text-brand-text">{meal.meal_name}</span>
+                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-brand-surface text-brand-muted border border-brand-border">
                             {meal.meal_period}
                           </span>
                         </div>
-                        <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-3">
-                          <span>Planned: <strong>{meal.planned_quantity} {meal.unit}</strong></span>
-                          <span>Expected: <strong>{meal.expected_consumers} pax</strong></span>
+                        <div className="text-xs text-brand-muted mt-1 flex flex-wrap items-center gap-3">
+                          <span>Planned: <strong className="text-brand-text">{meal.planned_quantity} {meal.unit}</strong></span>
+                          <span>&bull;</span>
+                          <span>Expected: <strong className="text-brand-text">{meal.expected_consumers} pax</strong></span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
                         {consumption ? (
                           <div className="text-right">
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                              <CheckCircle2 className="w-3 h-3" />
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-brand-mint bg-brand-primary/20 px-2.5 py-1 rounded-full border border-brand-primary/30">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
                               <span>Audited ({consumption.leftover_quantity} {meal.unit} leftover)</span>
                             </span>
                           </div>
                         ) : (
                           <Link
                             href={`/kitchen/consumption?mealId=${meal.id}`}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold transition shadow-2xs"
                           >
                             <ClipboardCheck className="w-3.5 h-3.5" />
                             <span>Audit Post-Service</span>
@@ -266,7 +262,7 @@ export default async function KitchenDashboardPage() {
 
                         <Link
                           href={`/kitchen/meals/${meal.id}`}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                          className="p-2 rounded-xl text-brand-muted hover:text-brand-text hover:bg-brand-surface transition border border-transparent hover:border-brand-border"
                         >
                           <ArrowRight className="w-4 h-4" />
                         </Link>
@@ -280,32 +276,32 @@ export default async function KitchenDashboardPage() {
 
           {/* Pending Audit Alert Card (if any) */}
           {awaitingAudit.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
-                  <AlertCircle className="w-4 h-4 text-amber-600" />
-                  <span>Past Services Needing Consumption Audits ({awaitingAudit.length})</span>
+            <div className="bg-amber-950/25 border border-amber-800/40 rounded-2xl p-6 shadow-md">
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                  <AlertCircle className="w-4 h-4 text-amber-400" />
+                  <span>Past Services Requiring Consumption Audits ({awaitingAudit.length})</span>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {awaitingAudit.slice(0, 3).map((m) => (
                   <div
                     key={m.id}
-                    className="p-3 bg-white rounded-xl border border-amber-200/80 flex items-center justify-between"
+                    className="p-3.5 bg-brand-surface rounded-xl border border-amber-800/30 flex items-center justify-between"
                   >
                     <div>
-                      <div className="text-xs font-bold text-slate-900">{m.meal_name}</div>
-                      <div className="text-[11px] text-slate-500">
+                      <div className="text-xs font-bold text-brand-text">{m.meal_name}</div>
+                      <div className="text-[11px] text-brand-muted mt-0.5">
                         {m.meal_date} &bull; <span className="capitalize">{m.meal_period}</span> &bull; Planned {m.planned_quantity} {m.unit}
                       </div>
                     </div>
 
                     <Link
                       href={`/kitchen/consumption?mealId=${m.id}`}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition shadow-2xs"
                     >
-                      <ClipboardCheck className="w-3 h-3" />
+                      <ClipboardCheck className="w-3.5 h-3.5" />
                       <span>Audit Now</span>
                     </Link>
                   </div>
@@ -315,35 +311,35 @@ export default async function KitchenDashboardPage() {
           )}
 
           {/* Upcoming Schedule */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+          <div className="glass-card bg-brand-surface border border-brand-border rounded-2xl p-6 shadow-md">
+            <div className="flex items-center justify-between mb-4 border-b border-brand-border pb-3.5">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-600" />
-                <h2 className="text-sm font-bold text-slate-900">Upcoming Planned Meals</h2>
+                <Calendar className="w-4 h-4 text-brand-primary" />
+                <h2 className="text-sm font-bold text-brand-text">Upcoming Planned Meals</h2>
               </div>
-              <Link href="/kitchen/meals/new" className="text-xs font-medium text-emerald-600 hover:underline">
-                + Schedule
+              <Link href="/kitchen/meals/new" className="text-xs font-bold text-brand-primary hover:underline">
+                + Schedule Service
               </Link>
             </div>
 
             {upcomingMeals.length === 0 ? (
-              <p className="text-xs text-slate-500 py-3 text-center">No upcoming meals scheduled.</p>
+              <p className="text-xs text-brand-muted py-4 text-center">No upcoming meals scheduled.</p>
             ) : (
               <div className="space-y-2.5">
                 {upcomingMeals.slice(0, 5).map((m) => (
                   <div
                     key={m.id}
-                    className="p-3 rounded-lg border border-slate-100 hover:border-slate-200 flex items-center justify-between text-xs"
+                    className="p-3 rounded-xl border border-brand-border hover:border-brand-primary/30 flex items-center justify-between text-xs bg-brand-card"
                   >
                     <div>
-                      <div className="font-semibold text-slate-900">{m.meal_name}</div>
-                      <div className="text-[11px] text-slate-500">
+                      <div className="font-bold text-brand-text">{m.meal_name}</div>
+                      <div className="text-[11px] text-brand-muted">
                         {m.meal_date} &bull; <span className="capitalize">{m.meal_period}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium text-slate-800">{m.planned_quantity} {m.unit}</div>
-                      <div className="text-[10px] text-slate-400">{m.expected_consumers} pax</div>
+                      <div className="font-bold text-brand-text">{m.planned_quantity} {m.unit}</div>
+                      <div className="text-[10px] text-brand-muted">{m.expected_consumers} pax</div>
                     </div>
                   </div>
                 ))}
@@ -355,22 +351,22 @@ export default async function KitchenDashboardPage() {
         {/* Right Col: Active Surplus Handoffs & Predictive Intelligence Note */}
         <div className="space-y-6">
           {/* Surplus Handoff List */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="glass-card bg-brand-surface border border-brand-border rounded-2xl p-6 shadow-md space-y-3.5">
+            <div className="flex items-center justify-between border-b border-brand-border pb-3.5">
               <div className="flex items-center gap-2">
-                <PackagePlus className="w-4 h-4 text-emerald-600" />
-                <h3 className="text-sm font-bold text-slate-900">Declared Surplus Items</h3>
+                <PackagePlus className="w-4 h-4 text-brand-primary" />
+                <h3 className="text-sm font-bold text-brand-text">Declared Surplus Items</h3>
               </div>
-              <Link href="/kitchen/surplus" className="text-xs font-semibold text-emerald-600 hover:underline">
+              <Link href="/kitchen/surplus" className="text-xs font-bold text-brand-primary hover:underline">
                 View All ({surplusList.length})
               </Link>
             </div>
 
             {surplusList.length === 0 ? (
-              <div className="text-center py-6 text-slate-400 text-xs">
-                <PackagePlus className="w-6 h-6 mx-auto mb-1 opacity-50" />
-                <p>No active surplus declared.</p>
-                <p className="text-[10px] mt-0.5">Leftover food reported during consumption audit appears here.</p>
+              <div className="text-center py-8 text-brand-muted text-xs bg-brand-card/40 rounded-xl border border-dashed border-brand-border">
+                <PackagePlus className="w-6 h-6 mx-auto mb-1.5 opacity-40 text-brand-muted" />
+                <p className="font-bold text-brand-text">No active surplus declared</p>
+                <p className="text-[10px] mt-0.5 text-brand-muted">Leftover food reported during consumption audit appears here.</p>
               </div>
             ) : (
               <div className="space-y-2.5">
@@ -378,16 +374,16 @@ export default async function KitchenDashboardPage() {
                   <Link
                     key={item.id}
                     href={`/kitchen/surplus/${item.id}`}
-                    className="p-3 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-xs block transition"
+                    className="p-3.5 rounded-xl bg-brand-card hover:bg-brand-card/80 border border-brand-border text-xs block transition"
                   >
                     <div className="flex items-start justify-between">
-                      <span className="font-bold text-slate-900">{item.food_name}</span>
-                      <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      <span className="font-bold text-brand-text">{item.food_name}</span>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-brand-primary/20 text-brand-mint border border-brand-primary/30">
                         {item.status}
                       </span>
                     </div>
-                    <div className="text-slate-600 mt-1 flex items-center justify-between">
-                      <span>Quantity: <strong>{item.quantity} {item.unit}</strong></span>
+                    <div className="text-brand-muted mt-1.5 flex items-center justify-between">
+                      <span>Qty: <strong className="text-brand-text">{item.quantity} {item.unit}</strong></span>
                       <RescueClock deadlineIso={item.redistribution_deadline} compact />
                     </div>
                   </Link>
@@ -397,18 +393,18 @@ export default async function KitchenDashboardPage() {
           </div>
 
           {/* Intelligence Engine Status Card */}
-          <div className="bg-gradient-to-br from-emerald-900 to-slate-900 text-white rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
-              <ShieldCheck className="w-4 h-4" />
+          <div className="bg-gradient-to-br from-brand-surface to-brand-card text-brand-text rounded-2xl p-6 shadow-md space-y-3.5 border border-brand-border">
+            <div className="flex items-center gap-2 text-brand-mint text-xs font-bold">
+              <ShieldCheck className="w-4 h-4 text-brand-mint" />
               <span>Deterministic Prediction Engine</span>
             </div>
-            <h4 className="text-sm font-bold">`mvp-baseline-v1` Active</h4>
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <h4 className="text-base font-extrabold tracking-tight">`mvp-baseline-v1` Active</h4>
+            <p className="text-xs text-brand-muted leading-relaxed">
               Forecasting combines 50% same-weekday, 30% recent 7-day, and 20% same-shift historical moving averages with a 3% preparation safety buffer.
             </p>
-            <div className="pt-2 border-t border-slate-700/60 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Zero AI in baseline estimation</span>
-              <span className="text-emerald-400 font-medium">100% Deterministic</span>
+            <div className="pt-3 border-t border-brand-border flex items-center justify-between text-[11px] text-brand-muted">
+              <span>Zero AI in baseline volume</span>
+              <span className="text-brand-mint font-bold">100% Deterministic</span>
             </div>
           </div>
         </div>

@@ -138,6 +138,13 @@ export async function GET(request: NextRequest) {
 
     return successResponse({
       opportunities: formatted,
+      receiver: {
+        id: receiver.id,
+        verified: receiver.verified,
+        maxCapacity: Number(receiver.max_capacity),
+        receiverType: receiver.receiver_type,
+        organizationName: authResult.organization?.name || "Community Partner",
+      },
       total: count ?? formatted.length,
       limit,
       offset,

@@ -92,12 +92,38 @@ NEXT_PUBLIC_MAP_STYLE_URL=
 - **Client / Browser:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_MAP_STYLE_URL` are accessible in browser client code. Database interactions via the publishable key are strictly governed by Postgres Row Level Security (RLS) and the user's authenticated session.
 - **Trusted Server Only:** `SUPABASE_SECRET_KEY` (used for privileged administrative actions) and `GEMINI_API_KEY` (used for AI classification) reside strictly on the server runtime. **Never** expose `SUPABASE_SECRET_KEY` or `GEMINI_API_KEY` to browser or client-side code.
 
-## 7. Important implementation rule
+## 7. Enable Supabase Realtime Publication
 
-The frontend must never assume that hiding a button is enough for authorization.
+To enable live WebSocket push notifications for dashboard state updates, open **SQL Editor** in Supabase and run:
 
-Authorization must be enforced through Supabase RLS and server-side checks.
+```sql
+-- Enable Realtime for core redistribution tables
+alter publication supabase_realtime add table public.pickup_requests;
+alter publication supabase_realtime add table public.surplus_items;
+alter publication supabase_realtime add table public.receivers;
+alter publication supabase_realtime add table public.organizations;
+alter publication supabase_realtime add table public.impact_records;
+```
 
-## 8. Next development step
+*Note: If Realtime WebSocket connection is unavailable or firewalled, the application automatically falls back to secure background polling (15s–20s interval).*
 
-After the database migration succeeds, initialize the Next.js application and connect Supabase before building dashboard UI.
+## 8. Production Deployment Checklist
+
+1. **Supabase Auth Redirects:**
+   - In Supabase Dashboard $\rightarrow$ **Authentication** $\rightarrow$ **URL Configuration**, add your production domain to *Site URL* and *Redirect URLs* (e.g., `https://your-domain.vercel.app/auth/confirm` and `https://your-domain.vercel.app/auth/login`).
+2. **Environment Variables on Vercel / Host:**
+   - `NEXT_PUBLIC_SUPABASE_URL`: Project URL (client-safe)
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: anon/publishable key (client-safe)
+   - `NEXT_PUBLIC_MAP_STYLE_URL`: (optional map style)
+   - `SUPABASE_SECRET_KEY`: service_role secret key (**Server Only** — never expose to client)
+   - `GEMINI_API_KEY`: Google Gemini API key (**Server Only**)
+3. **Storage Bucket Policies:**
+   - Confirm buckets `food-images` and `pickup-proofs` are created as **Private** buckets.
+4. **Post-Deployment Smoke Test Sequence:**
+   - Sign in as Admin $\rightarrow$ Verify `/admin` overview and `/admin/receivers` verification.
+   - Sign in as Kitchen $\rightarrow$ Log a surplus meal $\rightarrow$ Check demand prediction.
+   - Sign in as Receiver $\rightarrow$ Discover opportunity $\rightarrow$ Accept match $\rightarrow$ Execute pickup $\rightarrow$ Verify impact credit in `/receiver/impact`.
+
+## 9. Important implementation rule
+
+The frontend must never assume that hiding a button is enough for authorization. Authorization is strictly enforced through Supabase RLS policies and server-side route handlers.

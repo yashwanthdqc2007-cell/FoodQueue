@@ -8,6 +8,7 @@ export interface AuthActionResult {
   success: boolean;
   error?: string;
   fieldErrors?: Record<string, string[]>;
+  redirectTo?: string;
 }
 
 export async function loginAction(formData: FormData): Promise<AuthActionResult> {
@@ -38,7 +39,10 @@ export async function loginAction(formData: FormData): Promise<AuthActionResult>
     };
   }
 
-  redirect("/dashboard");
+  return {
+    success: true,
+    redirectTo: "/dashboard",
+  };
 }
 
 export async function registerAction(formData: FormData): Promise<AuthActionResult> {
@@ -76,13 +80,27 @@ export async function registerAction(formData: FormData): Promise<AuthActionResu
     };
   }
 
-  // If user session is created immediately (e.g. email confirmation disabled in dev)
-  if (data?.session) {
-    redirect("/dashboard");
+  // Handle case where email is already registered and identities array is empty
+  if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    return {
+      success: false,
+      error: "An account with this email address already exists. Please sign in instead.",
+    };
   }
 
-  // Otherwise, if email confirmation is required:
-  redirect("/auth/login?registered=true");
+  // If user session is created immediately (e.g. auto-confirm enabled)
+  if (data?.session) {
+    return {
+      success: true,
+      redirectTo: "/dashboard",
+    };
+  }
+
+  // Otherwise, email confirmation link sent or login required
+  return {
+    success: true,
+    redirectTo: "/auth/login?registered=true",
+  };
 }
 
 export async function logoutAction(): Promise<void> {
@@ -90,3 +108,4 @@ export async function logoutAction(): Promise<void> {
   await supabase.auth.signOut();
   redirect("/auth/login");
 }
+

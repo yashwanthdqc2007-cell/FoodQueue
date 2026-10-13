@@ -69,6 +69,7 @@ export interface AdminUserListItem {
   email: string | null;
   phone: string | null;
   role: AppRole;
+  requestedWorkspace?: "kitchen" | "receiver" | null;
   organizationId: string | null;
   organizationName: string | null;
   organizationType: OrganizationType | null;

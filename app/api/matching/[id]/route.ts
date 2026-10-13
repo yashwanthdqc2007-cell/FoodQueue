@@ -5,12 +5,12 @@ import { computeRescueClock } from "@/lib/rules/rescue-clock";
 import type { SurplusItemModel, RedistributionMatchModel, ProfileModel, KitchenModel, OrganizationModel, ReceiverModel } from "@/types/models";
 
 interface RouteParams {
-  params: Promise<{ surplusId: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
-    const { surplusId } = await params;
+    const { id: surplusId } = await params;
     if (!surplusId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(surplusId)) {
       return errorResponse("VALIDATION_ERROR", "Invalid surplus UUID parameter", 400);
     }

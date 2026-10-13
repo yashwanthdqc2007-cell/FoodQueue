@@ -11,9 +11,10 @@ import {
   PackagePlus,
   ArrowLeft,
   Loader2,
-  Calendar,
+  Scale,
 } from "lucide-react";
 import { SurplusHandoffModal } from "@/components/kitchen/surplus-handoff-modal";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface MealOption {
   id: string;
@@ -145,54 +146,39 @@ function ConsumptionAuditContent() {
 
   if (isLoadingMeals) {
     return (
-      <div className="max-w-2xl mx-auto p-12 text-center">
-        <Loader2 className="w-8 h-8 text-emerald-600 animate-spin mx-auto mb-2" />
-        <p className="text-xs text-slate-500">Loading meal records...</p>
+      <div className="max-w-2xl mx-auto p-16 text-center">
+        <Loader2 className="w-8 h-8 text-brand-primary animate-spin mx-auto mb-2" />
+        <p className="text-xs text-brand-muted font-medium">Loading meal audit roster...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/kitchen"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Dashboard</span>
-        </Link>
-      </div>
+    <div className="max-w-3xl mx-auto space-y-6 pb-12">
+      <PageHeader
+        title="Post-Service Consumption Audit"
+        description="Verify mass-balance conservation: record actual consumer headcount, consumed portions, and leftover quantities."
+        backHref="/kitchen"
+        backLabel="Back to Kitchen Dashboard"
+      />
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
-        <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
-          <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-700">
-            <ClipboardCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Post-Service Consumption Audit</h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Record actual headcounts, consumed food, and leftover quantities
-            </p>
-          </div>
-        </div>
-
+      <div className="glass-card bg-brand-surface border border-brand-border rounded-2xl p-6 sm:p-8 shadow-md">
         {errorMsg && (
-          <div className="mb-6 p-3.5 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-xs text-rose-800">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <div className="mb-6 p-4 rounded-xl bg-rose-950/30 border border-rose-800/50 flex items-start gap-3 text-xs text-rose-300">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <div>
-              <div className="font-semibold">Validation Notice</div>
+              <div className="font-bold">Validation Notice</div>
               <div>{errorMsg}</div>
             </div>
           </div>
         )}
 
         {successData ? (
-          <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-4">
-            <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
+          <div className="p-8 bg-brand-card border border-brand-primary/30 rounded-2xl text-center space-y-4">
+            <CheckCircle2 className="w-12 h-12 text-brand-mint mx-auto" />
             <div>
-              <h3 className="text-base font-bold text-emerald-950">Consumption Record Saved Successfully</h3>
-              <p className="text-xs text-emerald-800 mt-1">
+              <h3 className="text-base font-extrabold text-brand-text">Consumption Record Saved Successfully</h3>
+              <p className="text-xs text-brand-muted mt-1">
                 Audited: {successData.actualConsumers} consumers &bull; {successData.consumedQuantity} consumed &bull; {successData.leftoverQuantity} leftover
               </p>
             </div>
@@ -202,7 +188,7 @@ function ConsumptionAuditContent() {
                 <button
                   type="button"
                   onClick={() => setShowSurplusModal(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold shadow-xs transition"
                 >
                   <PackagePlus className="w-4 h-4" />
                   <span>Declare Surplus Handoff ({successData.leftoverQuantity})</span>
@@ -211,24 +197,24 @@ function ConsumptionAuditContent() {
 
               <Link
                 href="/kitchen"
-                className="px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition"
+                className="px-4 py-2.5 rounded-xl border border-brand-border bg-brand-card hover:bg-brand-surface text-brand-text text-xs font-bold shadow-2xs transition"
               >
                 Return to Dashboard
               </Link>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Meal Selection */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Select Meal Service to Audit <span className="text-rose-500">*</span>
+              <label className="block text-xs font-bold text-brand-text uppercase tracking-wider mb-1.5">
+                Select Meal Service to Audit <span className="text-rose-400">*</span>
               </label>
               <select
                 required
                 value={selectedMealId}
                 onChange={(e) => handleSelectMeal(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-brand-border text-xs text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary bg-brand-card font-semibold"
               >
                 {meals.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -241,8 +227,8 @@ function ConsumptionAuditContent() {
             {/* Audit Input Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Actual Consumers Served <span className="text-rose-500">*</span>
+                <label className="block text-xs font-bold text-brand-text uppercase tracking-wider mb-1.5">
+                  Actual Consumers Served <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="number"
@@ -251,13 +237,13 @@ function ConsumptionAuditContent() {
                   placeholder="e.g. 790"
                   value={actualConsumers}
                   onChange={(e) => setActualConsumers(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-brand-border text-xs font-bold text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary bg-brand-card"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Actual Prepared Quantity ({selectedMeal?.unit || "servings"}) <span className="text-rose-500">*</span>
+                <label className="block text-xs font-bold text-brand-text uppercase tracking-wider mb-1.5">
+                  Actual Prepared Quantity ({selectedMeal?.unit || "servings"}) <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="number"
@@ -266,13 +252,13 @@ function ConsumptionAuditContent() {
                   required
                   value={preparedQuantity}
                   onChange={(e) => setPreparedQuantity(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-brand-border text-xs font-medium text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary bg-brand-card"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Consumed Quantity ({selectedMeal?.unit || "servings"}) <span className="text-rose-500">*</span>
+                <label className="block text-xs font-bold text-brand-text uppercase tracking-wider mb-1.5">
+                  Consumed Quantity ({selectedMeal?.unit || "servings"}) <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="number"
@@ -282,18 +268,18 @@ function ConsumptionAuditContent() {
                   placeholder="e.g. 805"
                   value={consumedQuantity}
                   onChange={(e) => handleConsumedChange(e.target.value === "" ? "" : Number(e.target.value))}
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs text-slate-900 focus:outline-none focus:ring-2 ${
-                    isConsumedOverPrepared ? "border-rose-400 focus:ring-rose-500 bg-rose-50/50" : "border-slate-300 focus:ring-emerald-500"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium text-brand-text focus:outline-none focus:ring-2 bg-brand-card ${
+                    isConsumedOverPrepared ? "border-rose-500 focus:ring-rose-500 bg-rose-950/20 text-rose-300" : "border-brand-border focus:ring-brand-primary"
                   }`}
                 />
                 {isConsumedOverPrepared && (
-                  <span className="text-[11px] text-rose-600 mt-1 block">Consumed cannot exceed prepared quantity</span>
+                  <span className="text-[11px] text-rose-400 mt-1 block">Consumed quantity cannot exceed prepared quantity</span>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Leftover Quantity ({selectedMeal?.unit || "servings"}) <span className="text-rose-500">*</span>
+                <label className="block text-xs font-bold text-brand-text uppercase tracking-wider mb-1.5">
+                  Leftover Quantity ({selectedMeal?.unit || "servings"}) <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="number"
@@ -303,36 +289,39 @@ function ConsumptionAuditContent() {
                   placeholder="e.g. 45"
                   value={leftoverQuantity}
                   onChange={(e) => setLeftoverQuantity(e.target.value === "" ? "" : Number(e.target.value))}
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs text-slate-900 focus:outline-none focus:ring-2 font-bold ${
-                    isLeftoverOverPrepared || isSumOverTolerance ? "border-rose-400 focus:ring-rose-500 bg-rose-50/50" : "border-slate-300 focus:ring-emerald-500"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-bold text-brand-text focus:outline-none focus:ring-2 bg-brand-card ${
+                    isLeftoverOverPrepared || isSumOverTolerance ? "border-rose-500 focus:ring-rose-500 bg-rose-950/20 text-rose-300" : "border-brand-border focus:ring-brand-primary"
                   }`}
                 />
                 {isSumOverTolerance && (
-                  <span className="text-[11px] text-rose-600 mt-1 block">Consumed + Leftover exceeds prepared quantity (&gt;5% tolerance)</span>
+                  <span className="text-[11px] text-rose-400 mt-1 block">Consumed + Leftover exceeds prepared quantity (&gt;5% tolerance)</span>
                 )}
               </div>
             </div>
 
             {/* Mass Conservation Live Check Card */}
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1.5">
-              <div className="font-semibold text-slate-800">Deterministic Balance Check</div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span>Total Prepared:</span>
+            <div className="p-4 rounded-xl bg-brand-card border border-brand-border text-xs text-brand-text space-y-2">
+              <div className="font-bold text-brand-text flex items-center gap-1.5">
+                <Scale className="w-4 h-4 text-brand-mint" />
+                <span>Deterministic Mass-Balance Check</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-brand-muted">Total Prepared:</span>
                 <strong>{numPrepared} {selectedMeal?.unit}</strong>
               </div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span>Consumed ({numConsumed}) + Leftover ({numLeftover}):</span>
-                <strong className={isSumOverTolerance ? "text-rose-600" : "text-emerald-700"}>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-brand-muted">Consumed ({numConsumed}) + Leftover ({numLeftover}):</span>
+                <strong className={isSumOverTolerance ? "text-rose-400 font-bold" : "text-brand-mint font-bold"}>
                   {numConsumed + numLeftover} {selectedMeal?.unit}
                 </strong>
               </div>
             </div>
 
             {/* Form Actions */}
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+            <div className="pt-3 border-t border-brand-border flex items-center justify-end gap-3">
               <Link
                 href="/kitchen"
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+                className="px-4 py-2.5 rounded-xl border border-brand-border text-xs font-bold text-brand-muted hover:text-brand-text hover:bg-brand-card transition"
               >
                 Cancel
               </Link>
@@ -340,7 +329,7 @@ function ConsumptionAuditContent() {
               <button
                 type="submit"
                 disabled={isSubmitting || isConsumedOverPrepared || isLeftoverOverPrepared || isSumOverTolerance}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold shadow-xs transition disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
@@ -380,7 +369,7 @@ function ConsumptionAuditContent() {
 
 export default function ConsumptionAuditPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-500">Loading audit view...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-xs text-brand-muted">Loading audit view...</div>}>
       <ConsumptionAuditContent />
     </Suspense>
   );

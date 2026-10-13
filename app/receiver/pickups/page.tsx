@@ -18,7 +18,14 @@ import {
   Sparkles,
   UploadCloud,
   Check,
+  Package,
 } from "lucide-react";
+
+import { useToast } from "@/components/ui/toast";
+import { useRealtimeSync } from "@/lib/realtime/use-realtime-sync";
+import { RealtimeStatusBadge } from "@/components/shared/realtime-status-badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface PickupItem {
   id: string;
@@ -65,6 +72,7 @@ interface PickupItem {
 }
 
 export default function ReceiverPickupsPage() {
+  const toast = useToast();
   const [pickups, setPickups] = useState<PickupItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -80,6 +88,13 @@ export default function ReceiverPickupsPage() {
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  const { status: syncStatus, lastUpdated, refresh: syncRefresh } = useRealtimeSync({
+    channelName: "receiver-pickups-sync",
+    tables: ["pickup_requests", "surplus_items", "impact_records"],
+    onUpdate: () => setRefreshKey((k) => k + 1),
+    pollingIntervalMs: 15000,
+  });
+
   useEffect(() => {
     let ignore = false;
 
@@ -89,7 +104,6 @@ export default function ReceiverPickupsPage() {
       try {
         let queryUrl = "/api/pickups";
         if (filterTab === "active") {
-          // fetch all and filter in frontend or query requested/scheduled
           queryUrl = "/api/pickups";
         } else if (filterTab !== "all") {
           queryUrl = `/api/pickups?status=${filterTab}`;
@@ -189,6 +203,7 @@ export default function ReceiverPickupsPage() {
             throw new Error(uploadJson.error?.message || "Failed to upload handover proof image.");
           }
           uploadedPath = uploadJson.data.proofImagePath;
+          toast.info("Handover photo proof uploaded successfully", "Proof Stored");
         }
 
         // Step 2: Mark pickup as picked_up
@@ -205,6 +220,7 @@ export default function ReceiverPickupsPage() {
         if (!completeRes.ok || completeJson.error) {
           throw new Error(completeJson.error?.message || "Failed to complete pickup collection.");
         }
+        toast.success(`Collection completed for ${activePickup.surplus.foodName}. Impact credited!`, "Collection Verified");
       } else if (actionType === "cancel") {
         const cancelRes = await fetch(`/api/pickups/${activePickup.id}`, {
           method: "PATCH",
@@ -218,13 +234,16 @@ export default function ReceiverPickupsPage() {
         if (!cancelRes.ok || cancelJson.error) {
           throw new Error(cancelJson.error?.message || "Failed to cancel pickup");
         }
+        toast.info(`Pickup cancelled for ${activePickup.surplus.foodName}`, "Pickup Cancelled");
       }
 
       setActionType(null);
       setActivePickup(null);
       setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
-      setModalError(err instanceof Error ? err.message : "Failed to execute transaction update");
+      const msg = err instanceof Error ? err.message : "Failed to execute transaction update";
+      setModalError(msg);
+      toast.error(msg, "Action Failed");
     } finally {
       setIsSubmittingAction(false);
     }
@@ -234,35 +253,32 @@ export default function ReceiverPickupsPage() {
   const completedCount = pickups.filter((p) => p.status === "picked_up").length;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 text-brand-text">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Food Collection &amp; Pickups</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Coordinate collection handovers with partner donor kitchens, upload verification proofs, and record community food rescue impact.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setRefreshKey((k) => k + 1)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition self-start sm:self-auto"
-        >
-          <RefreshCw className="w-4 h-4" />
-          <span>Refresh</span>
-        </button>
-      </div>
+      <PageHeader
+        title="Food Collection & Pickups"
+        description="Coordinate collection handovers with partner donor kitchens, upload verification proofs, and record community food rescue impact."
+        actions={
+          <RealtimeStatusBadge
+            status={syncStatus}
+            lastUpdated={lastUpdated}
+            onRefresh={() => {
+              syncRefresh();
+              setRefreshKey((k) => k + 1);
+            }}
+          />
+        }
+      />
 
       {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-brand-border/60 pb-3">
         <button
           type="button"
           onClick={() => setFilterTab("all")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
             filterTab === "all"
-              ? "bg-slate-900 text-white shadow-xs"
-              : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900"
+              ? "bg-brand-violet text-brand-forest-dark shadow-xs font-extrabold"
+              : "bg-brand-surface border border-brand-border text-brand-muted hover:text-brand-text"
           }`}
         >
           All Pickups ({pickups.length})
@@ -271,10 +287,10 @@ export default function ReceiverPickupsPage() {
         <button
           type="button"
           onClick={() => setFilterTab("active")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
             filterTab === "active"
-              ? "bg-amber-600 text-white shadow-xs"
-              : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900"
+              ? "bg-amber-600 text-white shadow-xs font-extrabold"
+              : "bg-brand-surface border border-brand-border text-brand-muted hover:text-brand-text"
           }`}
         >
           <Clock className="w-3.5 h-3.5" />
@@ -284,10 +300,10 @@ export default function ReceiverPickupsPage() {
         <button
           type="button"
           onClick={() => setFilterTab("picked_up")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
             filterTab === "picked_up"
-              ? "bg-emerald-600 text-white shadow-xs"
-              : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900"
+              ? "bg-emerald-600 text-white shadow-xs font-extrabold"
+              : "bg-brand-surface border border-brand-border text-brand-muted hover:text-brand-text"
           }`}
         >
           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -297,10 +313,10 @@ export default function ReceiverPickupsPage() {
         <button
           type="button"
           onClick={() => setFilterTab("cancelled")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
             filterTab === "cancelled"
-              ? "bg-rose-600 text-white shadow-xs"
-              : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900"
+              ? "bg-rose-600 text-white shadow-xs font-extrabold"
+              : "bg-brand-surface border border-brand-border text-brand-muted hover:text-brand-text"
           }`}
         >
           Cancelled
@@ -309,47 +325,52 @@ export default function ReceiverPickupsPage() {
 
       {/* Main Content */}
       {isLoading ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-16 text-center flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
-          <span className="text-xs font-semibold text-slate-600">Loading collection transactions...</span>
+        <div className="glass-card bg-brand-card border border-brand-border rounded-3xl p-16 text-center flex flex-col items-center justify-center gap-3 shadow-xs">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-violet" />
+          <span className="text-xs font-bold text-brand-muted">Loading collection transactions...</span>
         </div>
       ) : errorMsg ? (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-center text-xs text-rose-700">
+        <div className="bg-brand-red-light border border-brand-red/30 rounded-2xl p-6 text-center text-xs text-brand-red">
           {errorMsg}
         </div>
       ) : pickups.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
-          <Calendar className="w-10 h-10 text-slate-300" />
-          <h3 className="text-base font-bold text-slate-900">No pickup collections found</h3>
-          <p className="text-xs text-slate-500 max-w-sm">
-            When you accept surplus opportunities from donor kitchens, scheduled collections and pickup handovers will appear here.
-          </p>
-        </div>
+        <EmptyState
+          icon={Calendar}
+          title="No pickup collections found"
+          description="When you accept surplus opportunities from donor kitchens, scheduled collections and handover records will appear here."
+          action={{
+            label: "Check Opportunities",
+            href: "/receiver",
+          }}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {pickups.map((p) => {
-            const statusBadge = {
-              requested: "bg-amber-100 text-amber-800 border-amber-200",
-              scheduled: "bg-blue-100 text-blue-800 border-blue-200",
-              picked_up: "bg-emerald-100 text-emerald-800 border-emerald-200",
-              cancelled: "bg-slate-100 text-slate-600 border-slate-200",
-            }[p.status];
+            const statusConfig = {
+              requested: { badge: "bg-amber-950/70 text-amber-300 border-amber-700/50", label: "Requested" },
+              scheduled: { badge: "bg-sky-950/70 text-sky-300 border-sky-700/50", label: "Scheduled" },
+              picked_up: { badge: "bg-emerald-950/70 text-emerald-300 border-emerald-700/50", label: "Completed" },
+              cancelled: { badge: "bg-brand-surface text-brand-muted border-brand-border", label: "Cancelled" },
+            }[p.status] || { badge: "bg-brand-surface text-brand-muted border-brand-border", label: p.status };
+
+            // Step timeline calculation
+            const stepIndex = p.status === "cancelled" ? -1 : p.status === "requested" ? 1 : p.status === "scheduled" ? 2 : 3;
 
             return (
               <div
                 key={p.id}
-                className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between space-y-4"
+                className="glass-card bg-brand-card border border-brand-border rounded-2xl p-5 shadow-sm hover:border-brand-violet/40 transition flex flex-col justify-between space-y-4 text-brand-text"
               >
                 <div>
                   {/* Top Bar */}
-                  <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="flex items-start justify-between gap-3 border-b border-brand-border/60 pb-3">
                     <div>
-                      <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-md border tracking-wider ${statusBadge}`}>
-                        {p.status.replace("_", " ")}
+                      <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border tracking-wider ${statusConfig.badge}`}>
+                        {statusConfig.label}
                       </span>
-                      <h3 className="text-base font-bold text-slate-900 mt-1.5">{p.surplus.foodName}</h3>
-                      <p className="text-xs text-slate-500">
-                        Quantity: <span className="font-bold text-slate-800">{p.surplus.quantity} {p.surplus.unit}</span>
+                      <h3 className="text-base font-bold text-brand-text mt-1.5">{p.surplus.foodName}</h3>
+                      <p className="text-xs text-brand-muted">
+                        Batch Quantity: <span className="font-extrabold text-brand-text">{p.surplus.quantity} {p.surplus.unit}</span>
                       </p>
                     </div>
 
@@ -359,39 +380,57 @@ export default function ReceiverPickupsPage() {
                     </div>
                   </div>
 
+                  {/* Step Progress Timeline (if not cancelled) */}
+                  {p.status !== "cancelled" && (
+                    <div className="py-2">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-brand-muted mb-1.5 px-1">
+                        <span className={stepIndex >= 1 ? "text-brand-violet font-extrabold" : ""}>1. Requested</span>
+                        <span className={stepIndex >= 2 ? "text-sky-400 font-extrabold" : ""}>2. Scheduled</span>
+                        <span className={stepIndex >= 3 ? "text-brand-primary font-extrabold" : ""}>3. Collected</span>
+                      </div>
+                      <div className="w-full bg-brand-surface h-1.5 rounded-full overflow-hidden border border-brand-border/60">
+                        <div
+                          className={`h-full transition-all duration-500 ${
+                            stepIndex === 3 ? "bg-brand-primary w-full" : stepIndex === 2 ? "bg-sky-400 w-2/3" : "bg-brand-violet w-1/3"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Donor Kitchen Location & Contact */}
-                  <div className="bg-slate-50 rounded-xl p-3 text-xs text-slate-700 space-y-1.5 border border-slate-100 mt-3">
-                    <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                      <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <div className="bg-brand-surface rounded-xl p-3 text-xs text-brand-text space-y-1.5 border border-brand-border mt-2">
+                    <div className="flex items-center gap-1.5 font-bold text-brand-text">
+                      <Building2 className="w-3.5 h-3.5 text-brand-primary shrink-0" />
                       <span>{p.surplus.kitchen.name}</span>
                     </div>
                     {p.surplus.kitchen.address && (
-                      <div className="flex items-start gap-1.5 text-slate-500">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                        <span>{p.surplus.kitchen.address}</span>
+                      <div className="flex items-start gap-1.5 text-brand-muted">
+                        <MapPin className="w-3.5 h-3.5 text-brand-muted shrink-0 mt-0.5" />
+                        <span className="line-clamp-2">{p.surplus.kitchen.address}</span>
                       </div>
                     )}
                     {p.surplus.kitchen.contactPhone && (
-                      <div className="flex items-center gap-1.5 text-slate-500">
-                        <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-brand-muted">
+                        <Phone className="w-3.5 h-3.5 text-brand-muted shrink-0" />
                         <span>{p.surplus.kitchen.contactPhone}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Logistics Timestamps */}
-                  <div className="text-[11px] text-slate-500 space-y-1.5 pt-3">
+                  <div className="text-[11px] text-brand-muted space-y-1.5 pt-3">
                     <div className="flex justify-between">
-                      <span>Requested Date:</span>
-                      <span className="text-slate-800 font-medium">
+                      <span>Requested:</span>
+                      <span className="text-brand-text font-semibold">
                         {new Date(p.requestedAt).toLocaleString()}
                       </span>
                     </div>
 
                     {p.scheduledAt && (
                       <div className="flex justify-between">
-                        <span>Scheduled Handover:</span>
-                        <span className="text-blue-700 font-bold">
+                        <span>Scheduled:</span>
+                        <span className="text-sky-300 font-bold">
                           {new Date(p.scheduledAt).toLocaleString()}
                         </span>
                       </div>
@@ -399,8 +438,8 @@ export default function ReceiverPickupsPage() {
 
                     {p.pickedUpAt && (
                       <div className="flex justify-between">
-                        <span>Collected At:</span>
-                        <span className="text-emerald-700 font-bold">
+                        <span>Handover Completed:</span>
+                        <span className="text-brand-primary font-bold">
                           {new Date(p.pickedUpAt).toLocaleString()}
                         </span>
                       </div>
@@ -409,23 +448,23 @@ export default function ReceiverPickupsPage() {
 
                   {/* Impact Summary (If completed) */}
                   {p.impact && (
-                    <div className="mt-3 p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs space-y-1 text-emerald-950">
-                      <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 uppercase tracking-tight">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Impact Credited</span>
+                    <div className="mt-3 p-3 bg-emerald-950/60 border border-emerald-700/50 rounded-xl text-xs space-y-1.5 text-emerald-300">
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Estimated Impact Credited</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-                        <div className="bg-white/60 p-1.5 rounded-lg">
-                          <span className="text-[10px] text-slate-500 block">Food Saved</span>
-                          <span className="font-bold text-emerald-800">{p.impact.foodSavedQuantity} kg</span>
+                        <div className="bg-brand-surface p-2 rounded-lg border border-brand-border">
+                          <span className="text-[10px] text-brand-muted block">Food Rescued</span>
+                          <span className="font-extrabold text-emerald-300">{p.impact.foodSavedQuantity} kg</span>
                         </div>
-                        <div className="bg-white/60 p-1.5 rounded-lg">
-                          <span className="text-[10px] text-slate-500 block">Meals</span>
-                          <span className="font-bold text-emerald-800">{p.impact.estimatedMealsSaved}</span>
+                        <div className="bg-brand-surface p-2 rounded-lg border border-brand-border">
+                          <span className="text-[10px] text-brand-muted block">Meals Saved</span>
+                          <span className="font-extrabold text-emerald-300">{p.impact.estimatedMealsSaved}</span>
                         </div>
-                        <div className="bg-white/60 p-1.5 rounded-lg">
-                          <span className="text-[10px] text-slate-500 block">CO2e Diverted</span>
-                          <span className="font-bold text-emerald-800">{p.impact.estimatedCo2eAvoided} kg</span>
+                        <div className="bg-brand-surface p-2 rounded-lg border border-brand-border">
+                          <span className="text-[10px] text-brand-muted block">CO₂e Avoided</span>
+                          <span className="font-extrabold text-emerald-300">{p.impact.estimatedCo2eAvoided} kg</span>
                         </div>
                       </div>
                     </div>
@@ -433,20 +472,20 @@ export default function ReceiverPickupsPage() {
 
                   {/* Notes */}
                   {p.notes && (
-                    <div className="text-[11px] text-slate-500 italic pt-2">
+                    <div className="text-[11px] text-brand-muted italic pt-2">
                       Handover note: &ldquo;{p.notes}&rdquo;
                     </div>
                   )}
                 </div>
 
                 {/* Card Action Buttons */}
-                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                <div className="pt-3 border-t border-brand-border/60 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     {(p.status === "scheduled" || p.status === "requested") && (
                       <button
                         type="button"
                         onClick={() => openCompleteModal(p)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-brand-forest-dark text-xs font-black transition shadow-sm"
                       >
                         <Check className="w-3.5 h-3.5" />
                         <span>Complete Handover</span>
@@ -457,7 +496,7 @@ export default function ReceiverPickupsPage() {
                       <button
                         type="button"
                         onClick={() => openProofModal(p)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-border bg-brand-surface hover:bg-brand-card text-brand-text text-xs font-semibold transition"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>View Proof</span>
@@ -469,7 +508,7 @@ export default function ReceiverPickupsPage() {
                     <button
                       type="button"
                       onClick={() => openCancelModal(p)}
-                      className="inline-flex items-center gap-1 text-xs text-rose-600 hover:text-rose-800 font-semibold"
+                      className="inline-flex items-center gap-1 text-xs text-brand-red hover:underline font-semibold"
                     >
                       <XCircle className="w-3.5 h-3.5" />
                       <span>Cancel</span>
@@ -484,28 +523,28 @@ export default function ReceiverPickupsPage() {
 
       {/* Complete Handover Modal */}
       {actionType === "complete" && activePickup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-bg/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-brand-card rounded-3xl p-6 max-w-md w-full shadow-2xl border border-brand-border space-y-4 text-brand-text">
+            <div className="flex items-center justify-between border-b border-brand-border/60 pb-3">
+              <h3 className="text-base font-bold text-brand-text flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-brand-primary" />
                 <span>Complete Collection Handover</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setActionType(null)}
-                className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                className="text-brand-muted hover:text-brand-text text-xs font-bold p-1 rounded-lg hover:bg-brand-surface"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Confirm food collection handover from <span className="font-bold text-slate-900">{activePickup.surplus.kitchen.name}</span>. This will finalize the transaction and credit verifiable impact.
+            <p className="text-xs text-brand-muted leading-relaxed">
+              Confirm food collection handover from <span className="font-bold text-brand-text">{activePickup.surplus.kitchen.name}</span>. This will finalize the transaction and credit verifiable impact.
             </p>
 
             {modalError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+              <div className="p-3 rounded-xl bg-brand-red-light border border-brand-red/30 text-xs text-brand-red">
                 {modalError}
               </div>
             )}
@@ -513,10 +552,10 @@ export default function ReceiverPickupsPage() {
             <div className="space-y-3 text-xs">
               {/* Proof Image Upload */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
+                <label className="font-bold text-brand-text block mb-1">
                   Upload Verification Proof (Photo)
                 </label>
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center hover:bg-slate-50 transition cursor-pointer relative">
+                <div className="border-2 border-dashed border-brand-border rounded-2xl p-4 text-center hover:bg-brand-surface transition cursor-pointer relative">
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
@@ -525,7 +564,7 @@ export default function ReceiverPickupsPage() {
                   />
                   {filePreview ? (
                     <div className="space-y-2">
-                      <div className="relative h-32 w-full rounded-xl overflow-hidden bg-slate-100">
+                      <div className="relative h-32 w-full rounded-xl overflow-hidden bg-brand-surface">
                         <Image
                           src={filePreview}
                           alt="Proof preview"
@@ -533,15 +572,15 @@ export default function ReceiverPickupsPage() {
                           className="object-contain"
                         />
                       </div>
-                      <span className="text-[11px] text-emerald-700 font-bold block">
-                        ✓ {selectedFile?.name} (Click to change)
+                      <span className="text-[11px] text-brand-primary font-bold block">
+                        ✓ {selectedFile?.name} (Click to replace)
                       </span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center gap-1.5 py-2">
-                      <UploadCloud className="w-6 h-6 text-slate-400" />
-                      <span className="font-semibold text-slate-700">Click to select handover photo</span>
-                      <span className="text-[10px] text-slate-400">JPEG, PNG, WebP (Max 5MB)</span>
+                      <UploadCloud className="w-6 h-6 text-brand-muted" />
+                      <span className="font-semibold text-brand-text">Click to select handover photo</span>
+                      <span className="text-[10px] text-brand-muted">JPEG, PNG, WebP (Max 5MB)</span>
                     </div>
                   )}
                 </div>
@@ -549,7 +588,7 @@ export default function ReceiverPickupsPage() {
 
               {/* Handover Notes */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
+                <label className="font-bold text-brand-text block mb-1">
                   Collection Notes (Optional)
                 </label>
                 <textarea
@@ -557,16 +596,16 @@ export default function ReceiverPickupsPage() {
                   value={actionNotes}
                   onChange={(e) => setActionNotes(e.target.value)}
                   placeholder="e.g. Received in good chilled condition by volunteer Team A."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-xs"
+                  className="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-surface text-brand-text placeholder:text-brand-muted/60 focus:outline-hidden focus:ring-2 focus:ring-brand-primary text-xs"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-brand-border/60">
               <button
                 type="button"
                 onClick={() => setActionType(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700"
+                className="px-4 py-2 rounded-xl border border-brand-border bg-brand-surface hover:bg-brand-card text-xs font-semibold text-brand-muted hover:text-brand-text"
               >
                 Cancel
               </button>
@@ -574,7 +613,7 @@ export default function ReceiverPickupsPage() {
                 type="button"
                 disabled={isSubmittingAction}
                 onClick={handleSubmitAction}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-brand-forest-dark text-xs font-bold transition shadow-xs disabled:opacity-50"
               >
                 {isSubmittingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 <span>Finalize Handover</span>
@@ -586,25 +625,25 @@ export default function ReceiverPickupsPage() {
 
       {/* Cancel Confirmation Modal */}
       {actionType === "cancel" && activePickup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center gap-2 text-rose-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-bg/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-brand-card rounded-3xl p-6 max-w-md w-full shadow-2xl border border-brand-border space-y-4 text-brand-text">
+            <div className="flex items-center gap-2 text-brand-red">
               <AlertTriangle className="w-5 h-5 shrink-0" />
-              <h3 className="text-base font-bold text-slate-900">Cancel Pickup Request?</h3>
+              <h3 className="text-base font-bold text-brand-text">Cancel Pickup Request?</h3>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-brand-muted leading-relaxed">
               Cancelling will inform the kitchen that you cannot collect this batch and make it available for other community receivers if time remains before the deadline.
             </p>
 
             {modalError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+              <div className="p-3 rounded-xl bg-brand-red-light border border-brand-red/30 text-xs text-brand-red">
                 {modalError}
               </div>
             )}
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1 text-xs">
+              <label className="font-bold text-brand-text block mb-1 text-xs">
                 Cancellation Reason (Optional)
               </label>
               <textarea
@@ -612,15 +651,15 @@ export default function ReceiverPickupsPage() {
                 value={actionNotes}
                 onChange={(e) => setActionNotes(e.target.value)}
                 placeholder="e.g. Volunteer vehicle unavailable."
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-rose-500 text-xs"
+                className="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-surface text-brand-text placeholder:text-brand-muted/60 focus:outline-hidden focus:ring-2 focus:ring-brand-red text-xs"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-brand-border/60">
               <button
                 type="button"
                 onClick={() => setActionType(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700"
+                className="px-4 py-2 rounded-xl border border-brand-border bg-brand-surface hover:bg-brand-card text-xs font-semibold text-brand-muted hover:text-brand-text"
               >
                 Go Back
               </button>
@@ -628,7 +667,7 @@ export default function ReceiverPickupsPage() {
                 type="button"
                 disabled={isSubmittingAction}
                 onClick={handleSubmitAction}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-xs disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-red hover:bg-brand-red/90 text-brand-forest-dark text-xs font-bold transition shadow-xs disabled:opacity-50"
               >
                 {isSubmittingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                 <span>Confirm Cancellation</span>
@@ -640,23 +679,23 @@ export default function ReceiverPickupsPage() {
 
       {/* Handover Proof Modal */}
       {actionType === "view_proof" && activePickup && activePickup.signedProofUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-bg/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-brand-card rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-brand-border space-y-4 text-brand-text">
+            <div className="flex items-center justify-between border-b border-brand-border/60 pb-3">
+              <h3 className="text-base font-bold text-brand-text flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-brand-primary" />
                 <span>Uploaded Handover Proof</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setActionType(null)}
-                className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                className="text-brand-muted hover:text-brand-text text-xs font-bold p-1 rounded-lg hover:bg-brand-surface"
               >
                 ✕
               </button>
             </div>
 
-            <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video max-h-80">
+            <div className="relative rounded-2xl overflow-hidden border border-brand-border bg-brand-surface aspect-video max-h-80">
               <Image
                 src={activePickup.signedProofUrl}
                 alt="Pickup Handover Proof"
@@ -665,8 +704,8 @@ export default function ReceiverPickupsPage() {
               />
             </div>
 
-            <div className="text-[11px] text-slate-500 flex justify-between pt-2">
-              <span>Donor Kitchen: {activePickup.surplus.kitchen.name}</span>
+            <div className="text-[11px] text-brand-muted flex justify-between pt-2">
+              <span>Donor Kitchen: <strong className="text-brand-text">{activePickup.surplus.kitchen.name}</strong></span>
               <span>Completed: {activePickup.pickedUpAt ? new Date(activePickup.pickedUpAt).toLocaleString() : "N/A"}</span>
             </div>
           </div>

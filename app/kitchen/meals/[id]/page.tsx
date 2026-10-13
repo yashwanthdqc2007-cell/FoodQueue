@@ -15,6 +15,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import type { MealModel } from "@/types/models";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface MealDetailPageProps {
   params: Promise<{ id: string }>;
@@ -72,145 +74,125 @@ export default async function MealDetailPage({ params }: MealDetailPageProps) {
   const surplusItems = meal.surplus_items || [];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Top Navigation */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/kitchen"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Kitchen Hub</span>
-        </Link>
-        <span className="text-xs text-slate-400 font-mono">Meal ID: {meal.id.slice(0, 8)}</span>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <PageHeader
+        title={meal.meal_name}
+        description={`Service scheduled for ${meal.meal_date} (${meal.meal_period.toUpperCase()}) at ${meal.kitchens?.name || "Kitchen Service"}.`}
+        backHref="/kitchen"
+        backLabel="Back to Kitchen Dashboard"
+        badge={
+          consumption ? (
+            <Badge variant="primary" size="md" icon={<CheckCircle2 className="w-3.5 h-3.5" />}>
+              Audited Service
+            </Badge>
+          ) : (
+            <Badge variant="amber" size="md" icon={<Clock className="w-3.5 h-3.5" />}>
+              Pending Audit
+            </Badge>
+          )
+        }
+        actions={
+          !consumption ? (
+            <Link
+              href={`/kitchen/consumption?mealId=${meal.id}`}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold shadow-xs transition"
+            >
+              <ClipboardCheck className="w-4 h-4" />
+              <span>Audit Consumption</span>
+            </Link>
+          ) : undefined
+        }
+      />
 
-      {/* Main Meal Header Card */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-          <div className="flex items-start gap-3.5">
-            <div className="p-3 rounded-2xl bg-emerald-100 text-emerald-700 mt-0.5">
-              <Utensils className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs uppercase font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                  {meal.meal_period}
-                </span>
-                <span className="text-xs text-slate-400">&bull;</span>
-                <span className="text-xs text-slate-500 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {meal.meal_date}
-                </span>
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900 mt-1">{meal.meal_name}</h1>
-              <p className="text-xs text-slate-500 mt-0.5">{meal.kitchens?.name || "Kitchen Service"}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {consumption ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Audited Service</span>
-              </span>
-            ) : (
-              <Link
-                href={`/kitchen/consumption?mealId=${meal.id}`}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition"
-              >
-                <ClipboardCheck className="w-4 h-4" />
-                <span>Audit Consumption</span>
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Planning Target Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5">
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-            <div className="text-[11px] font-medium text-slate-500">Planned Preparation</div>
-            <div className="text-lg font-bold text-slate-900 mt-0.5">
-              {meal.planned_quantity} <span className="text-xs font-normal text-slate-500">{meal.unit}</span>
+      {/* Planning Target Stats */}
+      <div className="bg-brand-surface border border-brand-border rounded-2xl p-6 shadow-xs space-y-4">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-brand-muted">
+          Scheduled Targets
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="p-4 rounded-xl bg-brand-card border border-brand-border">
+            <div className="text-[11px] font-bold text-brand-muted uppercase tracking-wider">Planned Preparation</div>
+            <div className="text-xl font-black text-brand-text mt-1">
+              {meal.planned_quantity} <span className="text-xs font-semibold text-brand-muted">{meal.unit}</span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-            <div className="text-[11px] font-medium text-slate-500">Expected Headcount</div>
-            <div className="text-lg font-bold text-slate-900 mt-0.5">
-              {meal.expected_consumers} <span className="text-xs font-normal text-slate-500">pax</span>
+          <div className="p-4 rounded-xl bg-brand-card border border-brand-border">
+            <div className="text-[11px] font-bold text-brand-muted uppercase tracking-wider">Expected Headcount</div>
+            <div className="text-xl font-black text-brand-text mt-1">
+              {meal.expected_consumers} <span className="text-xs font-semibold text-brand-muted">pax</span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-            <div className="text-[11px] font-medium text-slate-500">Service Shift</div>
-            <div className="text-lg font-bold text-slate-900 capitalize mt-0.5">{meal.meal_period}</div>
+          <div className="p-4 rounded-xl bg-brand-card border border-brand-border">
+            <div className="text-[11px] font-bold text-brand-muted uppercase tracking-wider">Service Shift</div>
+            <div className="text-xl font-black text-brand-text capitalize mt-1">{meal.meal_period}</div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-            <div className="text-[11px] font-medium text-slate-500">Measurement Unit</div>
-            <div className="text-lg font-bold text-slate-900 capitalize mt-0.5">{meal.unit}</div>
+          <div className="p-4 rounded-xl bg-brand-card border border-brand-border">
+            <div className="text-[11px] font-bold text-brand-muted uppercase tracking-wider">Measurement Unit</div>
+            <div className="text-xl font-black text-brand-text capitalize mt-1">{meal.unit}</div>
           </div>
         </div>
       </div>
 
       {/* Consumption Audit Record Section */}
       {consumption ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="bg-brand-surface border border-brand-border rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-brand-border pb-3.5">
             <div className="flex items-center gap-2">
-              <ClipboardCheck className="w-5 h-5 text-emerald-600" />
-              <h2 className="text-base font-bold text-slate-900">Post-Service Consumption Audit</h2>
+              <ClipboardCheck className="w-5 h-5 text-brand-primary" />
+              <h2 className="text-base font-extrabold text-brand-text">Post-Service Mass-Balance Audit</h2>
             </div>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-brand-muted font-medium">
               Recorded: {new Date(consumption.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="text-[11px] font-medium text-slate-500">Actual Consumers</div>
-              <div className="text-xl font-bold text-slate-900 mt-1">
-                {consumption.actual_consumers} <span className="text-xs font-normal text-slate-500">served</span>
+            <div className="p-4 rounded-xl bg-brand-card border border-brand-border">
+              <div className="text-[11px] font-bold text-brand-muted uppercase tracking-wider">Actual Consumers</div>
+              <div className="text-2xl font-black text-brand-text mt-1">
+                {consumption.actual_consumers} <span className="text-xs font-semibold text-brand-muted">served</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200">
-              <div className="text-[11px] font-medium text-blue-800">Actual Prepared</div>
-              <div className="text-xl font-bold text-blue-900 mt-1">
-                {consumption.prepared_quantity} <span className="text-xs font-normal text-blue-700">{meal.unit}</span>
+            <div className="p-4 rounded-xl bg-brand-card border border-brand-border">
+              <div className="text-[11px] font-bold text-brand-muted uppercase tracking-wider">Actual Prepared</div>
+              <div className="text-2xl font-black text-brand-text mt-1">
+                {consumption.prepared_quantity} <span className="text-xs font-semibold text-brand-muted">{meal.unit}</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200">
-              <div className="text-[11px] font-medium text-emerald-800">Consumed Quantity</div>
-              <div className="text-xl font-bold text-emerald-900 mt-1">
-                {consumption.consumed_quantity} <span className="text-xs font-normal text-emerald-700">{meal.unit}</span>
+            <div className="p-4 rounded-xl bg-brand-forest/25 border border-brand-forest/40">
+              <div className="text-[11px] font-bold text-brand-mint uppercase tracking-wider">Consumed Quantity</div>
+              <div className="text-2xl font-black text-brand-text mt-1">
+                {consumption.consumed_quantity} <span className="text-xs font-semibold text-brand-primary">{meal.unit}</span>
               </div>
             </div>
 
-            <div className={`p-3.5 rounded-xl border ${
+            <div className={`p-4 rounded-xl border ${
               Number(consumption.leftover_quantity) > 0
-                ? "bg-amber-50/70 border-amber-200 text-amber-900"
-                : "bg-slate-50 border-slate-200 text-slate-900"
+                ? "bg-brand-amber/15 border-brand-amber/35 text-brand-text"
+                : "bg-brand-card border-brand-border text-brand-text"
             }`}>
-              <div className="text-[11px] font-medium text-amber-800">Remaining Leftovers</div>
-              <div className="text-xl font-bold mt-1">
-                {consumption.leftover_quantity} <span className="text-xs font-normal">{meal.unit}</span>
+              <div className="text-[11px] font-bold text-brand-amber uppercase tracking-wider">Remaining Leftovers</div>
+              <div className="text-2xl font-black mt-1">
+                {consumption.leftover_quantity} <span className="text-xs font-semibold text-brand-muted">{meal.unit}</span>
               </div>
             </div>
           </div>
 
           {/* Leftover Action / Surplus Handoff Trigger */}
           {Number(consumption.leftover_quantity) > 0 && (
-            <div className="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            <div className="mt-4 p-5 rounded-xl bg-brand-amber/10 border border-brand-amber/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-brand-amber shrink-0" />
                 <div>
-                  <div className="text-xs font-bold text-amber-900">
-                    {consumption.leftover_quantity} {meal.unit} of edible food remaining
+                  <div className="text-xs font-bold text-brand-text">
+                    {consumption.leftover_quantity} {meal.unit} of safe edible food remaining
                   </div>
-                  <div className="text-[11px] text-amber-700">
+                  <div className="text-[11px] text-brand-muted mt-0.5">
                     Declare surplus to hand off to nearby community receivers before safe rescue window expires.
                   </div>
                 </div>
@@ -218,7 +200,7 @@ export default async function MealDetailPage({ params }: MealDetailPageProps) {
 
               <Link
                 href={`/kitchen/consumption?mealId=${meal.id}`}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs transition shrink-0"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-amber hover:bg-amber-600 text-brand-bg text-xs font-bold shadow-xs transition shrink-0"
               >
                 <PackagePlus className="w-4 h-4" />
                 <span>Declare Surplus Handoff</span>
@@ -227,17 +209,17 @@ export default async function MealDetailPage({ params }: MealDetailPageProps) {
           )}
         </div>
       ) : (
-        <div className="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-8 text-center space-y-3">
-          <Clock className="w-10 h-10 text-slate-400 mx-auto" />
+        <div className="bg-brand-surface border border-dashed border-brand-border rounded-2xl p-8 text-center space-y-3">
+          <Clock className="w-10 h-10 text-brand-muted mx-auto" />
           <div>
-            <h3 className="text-sm font-bold text-slate-800">Consumption Not Yet Audited</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+            <h3 className="text-sm font-bold text-brand-text">Consumption Not Yet Audited</h3>
+            <p className="text-xs text-brand-muted mt-1 max-w-md mx-auto">
               Once the dining period concludes, log actual consumers and food consumed to verify leftovers and train the demand forecasting baseline.
             </p>
           </div>
           <Link
             href={`/kitchen/consumption?mealId=${meal.id}`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-brand-bg text-xs font-bold shadow-xs transition"
           >
             <ClipboardCheck className="w-4 h-4" />
             <span>Perform Consumption Audit</span>
@@ -247,27 +229,27 @@ export default async function MealDetailPage({ params }: MealDetailPageProps) {
 
       {/* Linked Surplus Handoff Items */}
       {surplusItems.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="bg-brand-surface border border-brand-border rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-brand-border pb-3.5">
             <div className="flex items-center gap-2">
-              <PackagePlus className="w-5 h-5 text-emerald-600" />
-              <h2 className="text-base font-bold text-slate-900">Linked Surplus Items ({surplusItems.length})</h2>
+              <PackagePlus className="w-5 h-5 text-brand-primary" />
+              <h2 className="text-base font-extrabold text-brand-text">Linked Surplus Items ({surplusItems.length})</h2>
             </div>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-brand-border">
             {surplusItems.map((s) => (
-              <div key={s.id} className="py-3 flex items-center justify-between text-xs">
+              <div key={s.id} className="py-3.5 flex items-center justify-between text-xs">
                 <div>
-                  <span className="font-bold text-slate-900">{s.food_name}</span>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
-                    Quantity: <strong>{s.quantity} {s.unit}</strong> &bull; Category: <span className="capitalize">{s.category}</span>
+                  <span className="font-bold text-brand-text text-sm">{s.food_name}</span>
+                  <div className="text-[11px] text-brand-muted mt-0.5">
+                    Quantity: <strong className="text-brand-text">{s.quantity} {s.unit}</strong> &bull; Category: <span className="capitalize">{s.category}</span>
                   </div>
                 </div>
 
-                <span className="font-semibold uppercase text-[10px] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <Badge variant="primary" size="sm">
                   {s.status}
-                </span>
+                </Badge>
               </div>
             ))}
           </div>

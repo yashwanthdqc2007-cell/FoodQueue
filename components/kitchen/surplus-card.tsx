@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, Utensils, Eye, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Sparkles, UtensilsCrossed, ArrowRight, ShieldCheck, Clock, CheckCircle2, Croissant, Leaf, ShieldAlert } from "lucide-react";
 import { RescueClock } from "./rescue-clock";
 import type { RescueClockResult } from "@/lib/rules/rescue-clock";
 import type { RecoveryDecision } from "@/lib/rules/recovery-engine";
+import { Badge } from "@/components/ui/badge";
 
 export interface SurplusCardItem {
   id: string;
@@ -38,36 +39,78 @@ interface SurplusCardProps {
 export function SurplusCard({ item, onOpenAiScan }: SurplusCardProps) {
   const hasAiScan = item.aiConfidence !== null && item.aiConfidence !== undefined && item.aiConfidence > 0;
 
-  const categoryColor = {
-    edible_surplus: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    reusable: "bg-blue-100 text-blue-800 border-blue-200",
-    organic: "bg-amber-100 text-amber-800 border-amber-200",
-    unsafe: "bg-rose-100 text-rose-800 border-rose-200",
-    unknown: "bg-slate-100 text-slate-700 border-slate-200",
-  }[item.category] || "bg-slate-100 text-slate-700 border-slate-200";
+  const categoryBadgeVariant: Record<string, any> = {
+    edible_surplus: "edible",
+    reusable: "reusable",
+    organic: "organic_waste",
+    unsafe: "unsafe",
+    unknown: "default",
+  };
 
   const decisionColor = {
-    REDISTRIBUTE: "bg-emerald-600 text-white",
-    RECOVERY: "bg-amber-600 text-white",
-    DISPOSE: "bg-rose-600 text-white",
-  }[item.recoveryDecision?.path || "REDISTRIBUTE"] || "bg-slate-600 text-white";
+    REDISTRIBUTE: "bg-brand-primary text-brand-forest-dark",
+    RECOVERY: "bg-brand-amber text-brand-forest-dark",
+    DISPOSE: "bg-brand-red text-white",
+  }[item.recoveryDecision?.path || "REDISTRIBUTE"] || "bg-brand-forest text-brand-mint";
+
+  const categoryArtwork = {
+    edible_surplus: {
+      gradient: "from-[#122A1D] via-[#163625] to-[#0E1B14]",
+      icon: UtensilsCrossed,
+      label: "Cooked Meal",
+    },
+    reusable: {
+      gradient: "from-[#2A2012] via-[#332614] to-[#141009]",
+      icon: Croissant,
+      label: "Bakery / Pantry",
+    },
+    organic: {
+      gradient: "from-[#0F2624] via-[#143331] to-[#0A1918]",
+      icon: Leaf,
+      label: "Organic Surplus",
+    },
+    unsafe: {
+      gradient: "from-[#2A1212] via-[#331616] to-[#140808]",
+      icon: ShieldAlert,
+      label: "Unsafe Batch",
+    },
+    unknown: {
+      gradient: "from-[#19211D] to-[#121916]",
+      icon: UtensilsCrossed,
+      label: "Unclassified Batch",
+    },
+  }[item.category] || {
+    gradient: "from-[#19211D] to-[#121916]",
+    icon: UtensilsCrossed,
+    label: item.category,
+  };
+
+  const CategoryIcon = categoryArtwork.icon;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md transition overflow-hidden flex flex-col justify-between">
+    <div className="glass-card bg-brand-card rounded-3xl border border-brand-border shadow-md hover:border-brand-primary/40 transition-all overflow-hidden flex flex-col justify-between text-brand-text">
       {/* Card Header & Image Area */}
       <div>
-        <div className="relative aspect-video bg-slate-100 overflow-hidden border-b border-slate-100">
+        <div className="relative aspect-video bg-brand-bg-secondary overflow-hidden border-b border-brand-border">
           {item.signedImageUrl ? (
             <Image
               src={item.signedImageUrl}
               alt={item.foodName}
               fill
+              unoptimized
               className="object-cover group-hover:scale-105 transition duration-300"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-1.5 p-4 text-center">
-              <Utensils className="w-8 h-8 opacity-40" />
-              <span className="text-[11px] font-medium">No photo uploaded</span>
+            <div className={`w-full h-full bg-gradient-to-br ${categoryArtwork.gradient} flex flex-col items-center justify-center p-4 text-center relative`}>
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-1.5 shadow-xs">
+                <CategoryIcon className="w-6 h-6 text-brand-mint" />
+              </div>
+              <span className="text-[11px] font-bold text-brand-text tracking-wide uppercase">
+                {categoryArtwork.label}
+              </span>
+              <div className="absolute bottom-2 right-2 text-[9px] font-medium text-brand-muted/70 bg-black/40 px-2 py-0.5 rounded-full">
+                No photo uploaded &bull; Category fallback
+              </div>
             </div>
           )}
 
@@ -75,7 +118,7 @@ export function SurplusCard({ item, onOpenAiScan }: SurplusCardProps) {
           <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
             {item.recoveryDecision && (
               <span
-                className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-xs tracking-wider ${decisionColor}`}
+                className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full shadow-md tracking-wider ${decisionColor}`}
               >
                 {item.recoveryDecision.path}
               </span>
@@ -83,29 +126,27 @@ export function SurplusCard({ item, onOpenAiScan }: SurplusCardProps) {
           </div>
 
           <div className="absolute bottom-2.5 left-2.5">
-            <span
-              className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border shadow-xs ${categoryColor}`}
-            >
+            <Badge variant={categoryBadgeVariant[item.category] || "default"} size="sm">
               {item.category.replace("_", " ")}
-            </span>
+            </Badge>
           </div>
         </div>
 
         {/* Card Body */}
-        <div className="p-4 space-y-3">
+        <div className="p-4 sm:p-5 space-y-3.5">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 leading-tight line-clamp-1">
+              <h3 className="text-base font-extrabold text-brand-text leading-tight line-clamp-1">
                 {item.foodName}
               </h3>
-              <span className="text-xs text-slate-500 font-medium">
-                {item.sourceMeal?.mealName ? `From: ${item.sourceMeal.mealName}` : "Direct surplus logging"}
+              <span className="text-xs text-brand-muted font-medium">
+                {item.sourceMeal?.mealName ? `From: ${item.sourceMeal.mealName}` : "Direct surplus declaration"}
               </span>
             </div>
 
             <div className="text-right shrink-0">
-              <span className="text-sm font-black text-slate-900">
-                {item.quantity} <span className="text-xs font-semibold text-slate-500">{item.unit}</span>
+              <span className="text-base font-black text-brand-text">
+                {item.quantity} <span className="text-xs font-bold text-brand-primary uppercase">{item.unit}</span>
               </span>
             </div>
           </div>
@@ -117,25 +158,25 @@ export function SurplusCard({ item, onOpenAiScan }: SurplusCardProps) {
           />
 
           {/* AI Assessment Bar */}
-          <div className="rounded-xl p-2.5 bg-slate-50 border border-slate-200/70 text-xs">
+          <div className="rounded-xl p-3 bg-brand-surface border border-brand-border text-xs">
             {hasAiScan ? (
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-purple-900 font-bold">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                <div className="flex items-center gap-1.5 text-brand-violet font-bold">
+                  <Sparkles className="w-3.5 h-3.5 text-brand-violet" />
                   <span>AI: {Math.round((item.aiConfidence || 0) * 100)}% Confidence</span>
                 </div>
-                <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                  <span>Advisory only</span>
+                <span className="text-[10px] text-brand-muted flex items-center gap-1 font-medium">
+                  <ShieldCheck className="w-3 h-3 text-brand-primary" />
+                  <span>Advisory screening only</span>
                 </span>
               </div>
             ) : (
-              <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px]">Visual inspection pending</span>
+              <div className="flex items-center justify-between text-brand-muted">
+                <span className="text-[11px] font-medium">AI safety scan available</span>
                 <button
                   type="button"
                   onClick={() => onOpenAiScan(item)}
-                  className="text-[11px] font-bold text-purple-700 hover:text-purple-800 inline-flex items-center gap-1"
+                  className="text-[11px] font-bold text-brand-violet hover:underline inline-flex items-center gap-1"
                 >
                   <Sparkles className="w-3 h-3" />
                   <span>Scan Now</span>
@@ -147,11 +188,11 @@ export function SurplusCard({ item, onOpenAiScan }: SurplusCardProps) {
       </div>
 
       {/* Card Actions Footer */}
-      <div className="p-4 pt-0 flex items-center justify-between gap-2 border-t border-slate-100 mt-2">
+      <div className="p-4 sm:p-5 pt-0 flex items-center justify-between gap-2 border-t border-brand-border/60 mt-2">
         <button
           type="button"
           onClick={() => onOpenAiScan(item)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-200 text-purple-700 bg-purple-50/50 hover:bg-purple-100 text-xs font-semibold transition"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-violet/30 text-brand-violet bg-brand-violet-light/60 hover:bg-brand-violet-light text-xs font-bold transition"
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span>{hasAiScan ? "Re-Analyze" : "Analyze Food"}</span>
@@ -159,9 +200,9 @@ export function SurplusCard({ item, onOpenAiScan }: SurplusCardProps) {
 
         <Link
           href={`/kitchen/surplus/${item.id}`}
-          className="inline-flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-emerald-700 transition"
+          className="inline-flex items-center gap-1 text-xs font-bold text-brand-primary hover:underline transition"
         >
-          <span>View Details</span>
+          <span>View Details &amp; Matches</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>

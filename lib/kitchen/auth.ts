@@ -125,6 +125,31 @@ export async function authenticateKitchenUser(targetKitchenId?: string): Promise
       .returns<KitchenModel[]>();
 
     targetKitchen = kitchens?.[0] || null;
+  } else if (isAdmin) {
+    // If admin is inspecting without a specific kitchen ID, resolve assigned kitchen or first active kitchen
+    if (profile.organization_id) {
+      const { data: kitchens } = await supabase
+        .from("kitchens")
+        .select("id, organization_id, name, address, latitude, longitude, timezone, active, created_at, updated_at")
+        .eq("organization_id", profile.organization_id)
+        .eq("active", true)
+        .returns<KitchenModel[]>();
+
+      if (kitchens && kitchens.length > 0) {
+        targetKitchen = kitchens[0];
+      }
+    }
+
+    if (!targetKitchen) {
+      const { data: defaultKitchens } = await supabase
+        .from("kitchens")
+        .select("id, organization_id, name, address, latitude, longitude, timezone, active, created_at, updated_at")
+        .eq("active", true)
+        .limit(1)
+        .returns<KitchenModel[]>();
+
+      targetKitchen = defaultKitchens?.[0] || null;
+    }
   }
 
   return {
